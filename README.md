@@ -20,13 +20,13 @@ KikoPlay使用lua脚本
              - Item:  table {"title"="","size"="","time"="","magnet"="",url=""}
 
 KikoPlay提供了一个HTTP Get函数可供使用：kiko_HttpGet
-     - 参数：
-         - url: string
-         - query: table, {["key"]="value"}
-         - header: table, {["key"]="value"}
-     - 返回：
-         - err: 是否出错，无错误则为nil，否则为string错误内容
-         - content: string, 请求结果
+ - 参数：
+     - url: string
+     - query: table, {["key"]="value"}
+     - header: table, {["key"]="value"}
+ - 返回：
+     - err: 是否出错，无错误则为nil，否则为string错误内容
+     - content: string, 请求结果
 
 具体实例可查看ResScript中的脚本
 
