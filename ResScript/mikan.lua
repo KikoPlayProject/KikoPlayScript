@@ -4,6 +4,16 @@ scriptInfo = {
 	["description"] = "Mikan Project搜索, mikanani.me",
 	["version"] = "0.1",
 }
+function unescape(str)
+    str = string.gsub( str, '&lt;', '<' )
+    str = string.gsub( str, '&gt;', '>' )
+    str = string.gsub( str, '&quot;', '"' )
+    str = string.gsub( str, '&apos;', "'" )
+    str = string.gsub( str, '&#(%d+);', function(n) return utf8.char(n) end )
+    str = string.gsub( str, '&#x(%x+);', function(n) return utf8.char(tonumber(n,16)) end )
+    str = string.gsub( str, '&amp;', '&' ) -- Be sure to do this after all others
+    return str
+end
 function search(keyword,page)
     --kiko_HttpGet arg:
     --  url: string
@@ -19,11 +29,12 @@ function search(keyword,page)
     while rowPos~=nil do
         local _,cpos,url,title=string.find(content,"<a href=\"(.-)\".->(.-)</a>",rowPos)
         url="https://mikanani.me" .. url
-        title=string.gsub(title,"&amp;","&")
-        title=string.gsub(title,"&it;","<")
-        title=string.gsub(title,"&gt;",">")
-        title=string.gsub(title,"&quot;","\"")
-        title=string.gsub(title,"&nbsp;"," ")
+        --title=string.gsub(title,"&amp;","&")
+        --title=string.gsub(title,"&it;","<")
+        --title=string.gsub(title,"&gt;",">")
+        --title=string.gsub(title,"&quot;","\"")
+        --title=string.gsub(title,"&nbsp;"," ")
+        title=unescape(title)
         local _,cpos,magnet=string.find(content,"data%-clipboard%-text=\"(.-)\"",cpos)
         magnet=string.gsub(magnet,"&amp;","&")
         local _,cpos,size=string.find(content,"<td>%s*(.-)%s*</td>",cpos)
