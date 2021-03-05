@@ -1,7 +1,7 @@
-scriptInfo = {
-    ["title"] = "Mikan",
-    ["id"] = "Kikyou.Mikan",
-	["description"] = "Mikan Project搜索, mikanani.me",
+info = {
+    ["name"] = "Mikan",
+    ["id"] = "Kikyou.r.Mikan",
+	["desc"] = "Mikan Project资源搜索, mikanani.me",
 	["version"] = "0.1",
 }
 function unescape(str)
@@ -14,15 +14,27 @@ function unescape(str)
     str = string.gsub( str, '&amp;', '&' ) -- Be sure to do this after all others
     return str
 end
+--[[
+local gsub, char = string.gsub, string.char
+local entityMap  = {["lt"]="<",["gt"]=">",["amp"]="&",["quot"]='"',["apos"]="'"}
+local entitySwap = function(orig,n,s)
+  return (n=='' and entityMap[s])
+         or (n=="#" and tonumber(s)) and string.char(s)
+         or (n=="#x" and tonumber(s,16)) and string.char(tonumber(s,16))
+         or orig
+end
+function unescape(str)
+  return (gsub( str, '(&(#?x?)([%d%a]+);)', entitySwap ))
+end
+--]]
 function search(keyword,page)
     --kiko_HttpGet arg:
     --  url: string
     --  query: table, {["key"]=value} value: string
     --  header: table, {["key"]=value} value: string
-    local err,content=kiko_HttpGet("https://mikanani.me/Home/Search",{["searchstr"]=keyword},{})
-    if err~=nil then
-        return err,0,{}
-    end
+    local err,reply=kiko.httpget("https://mikanani.me/Home/Search",{["searchstr"]=keyword})
+    if err~=nil then error(err) end
+    local content = reply["content"]
     local rowPos=1
     local itemsList={}
     rowPos=string.find(content,"<tr class=\"js-search-results-row\"",rowPos,true)
@@ -53,5 +65,5 @@ function search(keyword,page)
     if rawlen(itemsList)==0 then
         pageCount=0
     end
-    return nil,pageCount,itemsList
+    return itemsList, pageCount
 end

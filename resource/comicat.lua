@@ -1,7 +1,7 @@
-scriptInfo = {
-    ["title"] = "漫猫BT",
-    ["id"] = "Kikyou.Comicat",
-	["description"] = "漫猫BT搜索, www.comicat.org",
+info = {
+    ["name"] = "漫猫BT",
+    ["id"] = "Kikyou.r.Comicat",
+	["desc"] = "漫猫BT搜索, www.comicat.org",
 	["version"] = "0.1",
 }
 --return: 
@@ -10,25 +10,21 @@ scriptInfo = {
 --  searchResult: table, {Item}
 --      Item:  table {"title"="","size"="","time"="","magnet"="",url=""}
 function search(keyword,page)
-    --kiko_HttpGet arg:
-    --  url: string
-    --  query: table, {["key"]=value} value: string
-    --  header: table, {["key"]=value} value: string
-    local err,content=kiko_HttpGet("http://www.comicat.org/search.php",{["keyword"]=keyword,["page"]=page},{})
-    if err~=nil then
-        return err,0,{}
-    end
+    local err, reply=kiko.httpget("http://www.comicat.org/search.php",{["keyword"]=keyword,["page"]=page})
+    if err~=nil then error(err) end
+    local content = reply["content"]
+
     local _,_,pageCount=string.find(content,"<span class=\"text_bold\">.-共找到(%d+)条匹配资源</span>")
     if pageCount==nil then
-        return "Comicat WebPage Decode Failed",0,{}
+        error("Comicat WebPage Decode Failed")
     end
     if pageCount=="0" then
-        return nil,0,{}
+        return {}, 0
     end
     pageCount=math.ceil(pageCount/50)
     local spos,epos=string.find(content,"<tbody class=\"tbody\" id=\"data_list\">.-</tbody>")
     if spos==nil then
-        return "Comicat WebPage Decode Failed",0,{}
+        error("Comicat WebPage Decode Failed")
     end
     local npos=spos
     local itemsList={}
@@ -56,5 +52,5 @@ function search(keyword,page)
         if lnpos==nil then break end
         npos=lnpos
     end
-    return nil,pageCount,itemsList
+    return itemsList, pageCount
 end

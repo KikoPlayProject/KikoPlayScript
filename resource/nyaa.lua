@@ -1,7 +1,7 @@
-scriptInfo = {
-    ["title"] = "Nyaa",
-    ["id"] = "Kikyou.Nyaa",
-	["description"] = "Nyaa搜索, nyaa.si",
+info = {
+    ["name"] = "Nyaa",
+    ["id"] = "Kikyou.r.Nyaa",
+	["desc"] = "Nyaa搜索, nyaa.si",
 	["version"] = "0.1",
 }
 function search(keyword,page)
@@ -9,10 +9,9 @@ function search(keyword,page)
     --  url: string
     --  query: table, {["key"]=value} value: string
     --  header: table, {["key"]=value} value: string
-    local err,content=kiko_HttpGet("https://nyaa.si/",{["f"]="0",["c"]="0_0",["q"]=keyword,["p"]=math.ceil(page)},{})
-    if err~=nil then
-        return err,0,{}
-    end
+    local err,reply=kiko.httpget("https://nyaa.si/",{["f"]="0",["c"]="0_0",["q"]=keyword,["p"]=math.ceil(page)})
+    if err~=nil then error(err) end
+    local content = reply["content"]
     local _,_,pageCount=string.find(content,"(%d+)</a>%s*</li>%s*<li class=\"next\">")
     if pageCount==nil then
         pageCount=1
@@ -45,5 +44,5 @@ function search(keyword,page)
     if rawlen(itemsList)==0 then
         pageCount=0
     end
-    return nil,tonumber(pageCount),itemsList
+    return itemsList, tonumber(pageCount)
 end
