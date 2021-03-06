@@ -16,6 +16,8 @@ function getEpInfo(epTitle)
         epType = 2
     end
     local epIndex = tonumber(index)
+    if epIndex == nil then epIndex = 1 end
+    if epName == nil then epName = epTitle end
     return epIndex, epType, epName
 end
 
