@@ -10,15 +10,19 @@ function setoption(key, val)
 end
 
 function getEpInfo(epTitle)
-    local _, _, tp, index, epName = string.find(epTitle, "([^%d]+)(%d+).-%s(.+)")
-    local epType = 1  -- 1: EP, 2: SP
-    if tp == 'S' then
-        epType = 2
+    local _, _, index, epName = string.find(epTitle, "第(%d+)话%s*(.*)")
+    if index ~= nil then
+        return tonumber(index), 1, epName or ""
     end
-    local epIndex = tonumber(index)
-    if epIndex == nil then epIndex = 1 end
-    if epName == nil then epName = epTitle end
-    return epIndex, epType, epName
+    local _, _, index, epName = string.find(epTitle, "第(%d+)集%s*(.*)")
+    if index ~= nil then
+        return tonumber(index), 1, epName or ""
+    end
+    local _, _, index, epName = string.find(epTitle, "S(%d+)%s*(.*)")
+    if index ~= nil then
+        return tonumber(index), 2, epName or ""
+    end
+    return 1, 1, epTitle
 end
 
 function search(keyword)
