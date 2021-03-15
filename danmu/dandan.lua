@@ -78,7 +78,13 @@ function danmu(source)
         local attrs = string.split(dmObj["p"], ',')
         if #attrs >= 4 then
             local time = tonumber(attrs[1])*1000
-            local dmType = tonumber(attrs[2])
+            local mode = tonumber(attrs[2])
+            local dmType = 0 --rolling
+            if mode == 4 then
+                dmType = 2  --bottom
+            elseif mode == 5 then
+                dmType = 1  --top
+            end
             local color = tonumber(attrs[3])
             local sender = "[Dandan]" .. attrs[4]
             table.insert(danmus, {

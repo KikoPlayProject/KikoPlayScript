@@ -143,7 +143,13 @@ function downloadDanmu(vid)
     for _, dmObj in ipairs(danmuArray) do
         local text = dmObj["body"]
         local time = tonumber(dmObj["position"])
-        local dmType = tonumber(dmObj["mode"])
+        local mode = tonumber(dmObj["mode"])
+        local dmType = 0 --rolling
+        if mode == 4 then
+            dmType = 2  --bottom
+        elseif mode == 5 then
+            dmType = 1  --top
+        end
         local size = tonumber(dmObj["size"])
         if size == 18 then
             size = 1

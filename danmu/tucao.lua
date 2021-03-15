@@ -176,7 +176,13 @@ function danmu(source)
                 if #attrs >= 5 then
                     local text = xmlreader:elemtext()
                     local time = tonumber(attrs[1]) * 1000
-                    local dmType = tonumber(attrs[2])
+                    local mode = tonumber(attrs[2])
+                    local dmType = 0 --rolling
+                    if mode == 4 then
+                        dmType = 2  --bottom
+                    elseif mode == 5 then
+                        dmType = 1  --top
+                    end
                     local size = tonumber(attrs[3])
                     if size == 18 then
                         size = 1

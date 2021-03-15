@@ -148,12 +148,7 @@ function danmu(source)
         local text = dmObj["text"]
         local time = tonumber(dmObj["time"])*100
         local pos = tonumber(dmObj["position"])
-        local dmType = 1
-        if pos == 1 then --top
-            dmType = 5
-        elseif pos == 2 then --bottom
-            dmType = 4
-        end
+        local dmType = pos  -- pos=1(top),pos=2(bottom)
         local size = tonumber(dmObj["size"])
         if size == 0 then  --small
             size = 1

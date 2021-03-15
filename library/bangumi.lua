@@ -96,7 +96,7 @@ function unescape(str)
 end
 
 function getep(anime)
-    local bgmId = anime["scriptData"]
+    local bgmId = anime["data"]
     local header = {
         ["Accept"]="application/json"
     }
@@ -169,7 +169,7 @@ function getCrt(crtArray)
 end
 
 function detail(anime)
-    local bgmId = anime["scriptData"]
+    local bgmId = anime["data"]
     query = {
         ["responseGroup"]="medium",
     }
@@ -286,7 +286,7 @@ function addLevelTags(tags, anime)
         ["CONNECT"]="CONNECT",
         ["LIDENFILMS"]="LIDENFILMS",
         ["Diomedéa"]="Diomedéa",["diomedéa"]="Diomedéa", ["diomedea"]="Diomedéa",
-        ["GEEK TOYS"]="GEEK TOYS", ["GeekToys"]="GEEK TOYS",
+        ["GEEK TOYS"]="GeekToys", ["GeekToys"]="GeekToys",
         ["Lerche"]="Lerche",
         ["Passione"]="Passione", ["パッショーネ"]="Passione",
         ["Millepensee"]="Millepensee", ["millepensee"]="Millepensee", ["ミルパンセ"]="Millepensee",
@@ -296,7 +296,8 @@ function addLevelTags(tags, anime)
         ["MAHO FILM"]="MAHO FILM", ["MAHOFILM"]="MAHO FILM",
         ["Lesprit"]="Lesprit",
         ["SANZIGEN Inc."]="SANZIGEN Inc.", ["SANZIGEN"]="SANZIGEN Inc.",
-        ["Tear Studio"]="Tear Studio", ["Tear_Studio"]="Tear Studio"
+        ["Tear Studio"]="Tear Studio", ["Tear_Studio"]="Tear Studio",
+        ["C-Station"]="C-Station"
     }
     for i, tag in ipairs(tags) do
         if studios[tag] then
@@ -383,7 +384,7 @@ function tagFilter(tags, anime)
 end
 
 function gettags(anime)
-    local bgmId = anime["scriptData"]
+    local bgmId = anime["data"]
     local err, reply = kiko.httpget(string.format("http://bgm.tv/subject/%s", bgmId))
     if err ~= nil then error(err) end
     local content = reply["content"]

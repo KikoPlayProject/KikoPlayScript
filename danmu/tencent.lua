@@ -148,16 +148,16 @@ function decodeDanmu(content, danmuList)
         if string.startsWith("VIP :") then
             text = string.sub(text, 6)
         end
-        local dmType = 1
+        local dmType = 0
         local color = 0xffffff
         local err, pobj = kiko.json2table(dm["content_style"])
         if err==nil then
             local pos = tonumber(pobj["position"])
             if pos~=nil then
                 if pos==5 then  --top
-                    dmType = 5
+                    dmType = 1
                 elseif pos==6 then  --bottom
-                    dmType = 4
+                    dmType = 2
                 end
             end
             local pcolor = pobj["gradient_colors"]
