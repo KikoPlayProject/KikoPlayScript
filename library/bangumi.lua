@@ -297,7 +297,8 @@ function addLevelTags(tags, anime)
         ["Lesprit"]="Lesprit",
         ["SANZIGEN Inc."]="SANZIGEN Inc.", ["SANZIGEN"]="SANZIGEN Inc.",
         ["Tear Studio"]="Tear Studio", ["Tear_Studio"]="Tear Studio",
-        ["C-Station"]="C-Station"
+        ["C-Station"]="C-Station",
+        ["Seven Arcs"]="Seven Arcs", ["SEVEN_ARCS"]="Seven Arcs", ["SEVEN·ARCS"]="Seven Arcs", ["SEVEN・ARCS"]="Seven Arcs", ["SevenArcs"]="Seven Arcs",
     }
     for i, tag in ipairs(tags) do
         if studios[tag] then
@@ -371,6 +372,7 @@ function tagFilter(tags, anime)
     removeWhen(tagSet, "卖肉", {"肉", "肉番"})
     removeWhen(tagSet, "肉番", {"肉"})
     removeWhen(tagSet, "续作", {"续篇"})
+    removeWhen(tagSet, "狗粮", {"酸"})
     local retTags = {}
 
     local i, maxCount = 0, 20
