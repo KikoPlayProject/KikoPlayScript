@@ -73,6 +73,9 @@ function search(keyword)
     local animes = {}
     for _, anime in pairs(obj['list']) do
         local animeName = unescape(anime["name_cn"] or anime["name"])
+        if #animeName==0 then
+            animeName = unescape(anime["name"])
+        end
         local data = string.format("%d", anime["id"])
         local epList = {}
         table.insert(animes, {
