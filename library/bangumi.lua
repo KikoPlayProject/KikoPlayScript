@@ -187,6 +187,7 @@ function detail(anime)
         error(err)
     end
     local animeName = unescape(obj["name_cn"] or obj["name"])
+    if #animeName==0 then animeName = unescape(anime["name"]) end
     
     local anime = {
         ["name"]=animeName,
