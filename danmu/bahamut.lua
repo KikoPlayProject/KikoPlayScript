@@ -2,7 +2,7 @@ info = {
     ["name"] = "动画疯",
     ["id"] = "Kikyou.d.Gamer",
 	["desc"] = "巴哈姆特动画疯弹幕脚本",
-	["version"] = "0.1"
+	["version"] = "0.1.1"
 }
 
 supportedURLsRe = {
@@ -22,6 +22,9 @@ function search(keyword)
     if err ~= nil then error(err) end
     local content = reply["content"]
     local _, _, searchContent = string.find(content, "<div class=\"animate%-theme%-list\">(.+)<div class=\"animate%-theme%-list animate%-wish\">")
+    if searchContent == nil then
+        _, _, searchContent = string.find(content, "<div class=\"animate%-theme%-list\">(.+)<div class=\"footer\">")
+    end
     if searchContent == nil then return {} end
 
     local parser = kiko.htmlparser(searchContent)
