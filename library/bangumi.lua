@@ -160,8 +160,10 @@ function getCrt(crtArray)
             local img = crt["images"]
             local imgurl = ""
             if img ~= nil then imgurl = img["grid"] end
+            local crt_name = unescape(crt["name_cn"] or crt["name"])
+            if #crt_name==0 then crt_name = unescape(crt["name"]) end
             table.insert(crts, {
-                ["name"]=crt["name_cn"] or crt["name"],
+                ["name"]=crt_name,
                 ["actor"]=actor,
                 ["link"]=string.format("http://bgm.tv/character/%d", crt["id"]),
                 ["imgurl"]=imgurl
