@@ -115,6 +115,7 @@ function getep(anime)
         local epType = ep["type"] + 1  -- ep["type"]: 0~6
         local epIndex = ep["sort"]
         local epName = unescape(ep["name_cn"] or ep["name"])
+        if #epName==0 then epName = unescape(ep["name"]) end
         table.insert(eps, {
             ["name"]=epName,
             ["index"]=epIndex,
