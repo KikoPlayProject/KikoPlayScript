@@ -2,7 +2,7 @@ info = {
     ["name"] = "Bilibili",
     ["id"] = "Kikyou.d.Bilibili",
 	["desc"] = "Bilibili弹幕脚本",
-	["version"] = "0.1"
+	["version"] = "0.2"
 }
 
 supportedURLsRe = {
@@ -10,7 +10,9 @@ supportedURLsRe = {
     "(https?://)?www\\.bilibili\\.com/video/BV[\\dA-Za-z]+/?",
     "av[0-9]+",
     "BV[\\dA-Za-z]+",
-    "(https?://)?www\\.bilibili\\.com/bangumi/media/md[0-9]+/?"
+    "(https?://)?www\\.bilibili\\.com/bangumi/media/md[0-9]+/?",
+    "(https?://)?www\\.bilibili\\.com/bangumi/play/ss[0-9]+/?",
+    "(https?://)?www\\.bilibili\\.com/bangumi/play/ep[0-9]+/?"
 }
 
 sampleSupporedURLs = {
@@ -18,7 +20,9 @@ sampleSupporedURLs = {
     "https://www.bilibili.com/video/BV11x411P7TB",
     "av24213033",
     "BV11x411P7TB",
-    "https://www.bilibili.com/bangumi/media/md28221404"
+    "https://www.bilibili.com/bangumi/media/md28221404",
+    "https://www.bilibili.com/bangumi/play/ss36429",
+    "https://www.bilibili.com/bangumi/play/ep409605"
 }
 
 function str2time(time_str)
@@ -98,6 +102,66 @@ function epinfo(source)
     if err ~= nil then error(err) end
     if source_obj["stype"]=="collection" then
         local query = { ["media_id"] = source_obj["media_id"] }
+        local header = { ["Accept"]="application/json" }
+        local err, reply = kiko.httpget("https://bangumi.bilibili.com/view/web_api/season", query, header)
+        if err ~= nil then error(err) end
+        local content = reply["content"]
+        local err, obj = kiko.json2table(content)
+        if err ~= nil then error(err) end
+        local results = {}
+        for _, bobj in ipairs(obj["result"]["episodes"]) do
+            local index = bobj["index"]
+            local title = bobj["index_title"]
+            local data = {
+                ["aid"] = string.format("%d", bobj["aid"]),
+                ["cid"] = string.format("%d", bobj["cid"]),
+                ["bvid"] = bobj["bvid"],
+                ["stype"] = "video"
+            }
+            local _, data_str = kiko.table2json(data)
+            local fTitle = string.format("%s-%s", index, title)
+            if title == nil or #title == 0 then
+                fTitle = index
+            end
+            table.insert(results, {
+                ["title"] = fTitle,
+                ["duration"] = bobj["duration"]/1000,
+                ["data"] = data_str
+            })
+        end
+        return results
+    elseif source_obj["stype"]=="collection_ss" then
+        local query = { ["season_id"] = source_obj["season_id"] }
+        local header = { ["Accept"]="application/json" }
+        local err, reply = kiko.httpget("https://bangumi.bilibili.com/view/web_api/season", query, header)
+        if err ~= nil then error(err) end
+        local content = reply["content"]
+        local err, obj = kiko.json2table(content)
+        if err ~= nil then error(err) end
+        local results = {}
+        for _, bobj in ipairs(obj["result"]["episodes"]) do
+            local index = bobj["index"]
+            local title = bobj["index_title"]
+            local data = {
+                ["aid"] = string.format("%d", bobj["aid"]),
+                ["cid"] = string.format("%d", bobj["cid"]),
+                ["bvid"] = bobj["bvid"],
+                ["stype"] = "video"
+            }
+            local _, data_str = kiko.table2json(data)
+            local fTitle = string.format("%s-%s", index, title)
+            if title == nil or #title == 0 then
+                fTitle = index
+            end
+            table.insert(results, {
+                ["title"] = fTitle,
+                ["duration"] = bobj["duration"]/1000,
+                ["data"] = data_str
+            })
+        end
+        return results
+    elseif source_obj["stype"]=="collection_ep" then
+        local query = { ["ep_id"] = source_obj["ep_id"] }
         local header = { ["Accept"]="application/json" }
         local err, reply = kiko.httpget("https://bangumi.bilibili.com/view/web_api/season", query, header)
         if err ~= nil then error(err) end
@@ -206,7 +270,11 @@ function urlinfo(url)
         ["av%d+"]="av",
         ["BV[%dA-Za-z]+"]="bv",
         ["https?://www%.bilibili%.com/bangumi/media/md[0-9]+/?"]="bgm",
-        ["www%.bilibili%.com/bangumi/media/md[0-9]+/?"]="bgm"
+        ["www%.bilibili%.com/bangumi/media/md[0-9]+/?"]="bgm",
+        ["https?://www%.bilibili%.com/bangumi/play/ss[0-9]+/?"]="bgm_play_ss",
+        ["www%.bilibili%.com/bangumi/play/ss[0-9]+/?"]="bgm_play_ss",
+        ["https?://www%.bilibili%.com/bangumi/play/ep[0-9]+/?"]="bgm_play_ep",
+        ["www%.bilibili%.com/bangumi/play/ep[0-9]+/?"]="bgm_play_ep"
     }
     local matched = nil
     for pv, k in pairs(pattens) do
@@ -228,6 +296,16 @@ function urlinfo(url)
         local _, _, bgmid = string.find(url, "md(%d+)")
         return epinfo({
             ["data"] = string.format("{\"media_id\":\"%s\", \"stype\": \"collection\"}", bgmid)
+        })
+    elseif matched == "bgm_play_ss" then
+        local _, _, bgmid = string.find(url, "ss(%d+)")
+        return epinfo({
+            ["data"] = string.format("{\"season_id\":\"%s\", \"stype\": \"collection_ss\"}", bgmid)
+        })
+    elseif matched == "bgm_play_ep" then
+        local _, _, bgmid = string.find(url, "ep(%d+)")
+        return epinfo({
+            ["data"] = string.format("{\"ep_id\":\"%s\", \"stype\": \"collection_ep\"}", bgmid)
         })
     elseif matched == "bv" then
         local _, _, bvid = string.find(url, "(BV[%dA-Za-z]+)")

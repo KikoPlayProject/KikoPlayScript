@@ -2,7 +2,7 @@ info = {
     ["name"] = "AcFun",
     ["id"] = "Kikyou.d.AcFun",
 	["desc"] = "AcFun弹幕脚本",
-	["version"] = "0.1"
+	["version"] = "0.2"
 }
 
 supportedURLsRe = {
@@ -51,17 +51,20 @@ function search(keyword)
     local query = {
         ["keyword"]=keyword
     }
-    local err, reply = kiko.httpget("http://api-new.acfunchina.com/rest/app/search/complex", query)
+    local header = {
+
+    }
+    local err, reply = kiko.httpget("https://www.acfun.cn/rest/pc-direct/search/bgm", query, header)
     if err ~= nil then error(err) end
     local content = reply["content"]
     local err, obj = kiko.json2table(content)
     if err ~= nil then error(err) end
-    local ret = obj["itemList"]
+    local ret = obj["bgmList"]
     if ret == nil then return {} end
     local results = {}
     for _, item in ipairs(ret) do
         local itemType = item["itemType"]
-        if itemType == 5 then --bangumi
+        --if itemType == 5 then --bangumi
             local bgmTitle = item["bgmTitle"]
             local bgmId = item["bgmId"]
             local i = 1
@@ -75,18 +78,18 @@ function search(keyword)
                     ["data"] = data_str
                 })
                 i = i+1
-            end
-        elseif itemType == 2 then
-            local data = {
-                ["url"] = string.format("https://www.acfun.cn/v/ac%d", item["id"])
-            }
-            local _, data_str = kiko.table2json(data)
-            table.insert(results, {
-                ["title"] = item["title"],
-                ["desc"] = item["decr"],
-                ["duration"] = str2time(item["playDuration"]),
-                ["data"] = data_str
-            })
+            --end
+        --elseif itemType == 2 then
+            --local data = {
+                --["url"] = string.format("https://www.acfun.cn/v/ac%d", item["id"])
+            --}
+            --local _, data_str = kiko.table2json(data)
+            --table.insert(results, {
+                --["title"] = item["title"],
+                --["desc"] = item["decr"],
+                --["duration"] = str2time(item["playDuration"]),
+                --["data"] = data_str
+            --})
         end
     end
     return results
