@@ -13,3 +13,7 @@ KikoPlay支持Lua脚本，有三种类型：
 
 如果有问题，创建issue或者联系我:
 dx_8820832#yeah.net（#→@），或者到QQ群874761809反馈
+
+## 新脚本
+
+ - [tmdb.lua](library/tmdb.lua) 从[themoviedb.org](themoviedb.org)获取信息，具体用法参考[这里](https://github.com/kafovin/KikoPlayScript)

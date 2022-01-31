@@ -1,5 +1,5 @@
 # <img src="kikoplay.png" width=24 /> KikoPlay 脚本开发参考 
-2021.03 By Kikyou，本文档适用于KikoPlay 0.8及以上版本
+2022.01 By Kikyou，本文档适用于KikoPlay 0.8.2及以上版本
 
 ## 目录
  - [脚本类型](#脚本类型)
@@ -7,6 +7,7 @@
    - [弹幕脚本](#弹幕脚本)
    - [资料脚本](#资料脚本)
    - [资源脚本](#资源脚本)
+   - [番组日历脚本](#番组日历脚本)
  - [KikoPlay API](#kikoplay-api)
  - [数据类型](#数据类型)
    - [DanmuSource](#danmusource)
@@ -19,21 +20,24 @@
    - [LibraryMenu](#librarymenu)
    - [ResourceItem](#resourceitem)
    - [NetworkReply](#networkreply)
+   - [BgmSeason](#bgmseason)
+   - [BgmItem](#bgmitem)
  
 
 ## 脚本类型
-KikoPlay中有三类脚本：
+KikoPlay中有4类脚本：
  - 弹幕脚本： 位于script/danmu目录下，提供弹幕搜索、下载、发送弹幕等功能
  - 资料脚本：位于script/library目录下，提供动画（或者其他类型的条目）搜索、详细信息获取、分集信息获取、标签获取、自动关联等功能
  - 资源脚本：位于script/resource目录下，提供资源搜索功能
+ - 番组日历脚本：位于script/bgm_calendar，提供每日放送列表。0.8.2起新增
 
 所有的脚本均为Lua脚本，不同类型的脚本需要提供不同的接口
 ### 公共部分
 每个脚本都应包含一个`info`类型的table，提供脚本的基本信息，包含这些内容：
 ```lua
 info = {
-    ["name"] = "Bilibili",          --脚本名称
-    ["id"] = "Kikyou.d.Bilibili",   --脚本id，不应和其他脚本的id相同
+  ["name"] = "Bilibili",          --脚本名称
+  ["id"] = "Kikyou.d.Bilibili",   --脚本id，不应和其他脚本的id相同
 	["desc"] = "Bilibili弹幕脚本",   --描述信息
 	["version"] = "0.1"             --版本信息
 }
@@ -215,6 +219,24 @@ end
    > 返回： [ResourceItem](#resourceitem)，包含`magnet`字段的item信息
 
     可选，如果在搜索中无法确定资源的`magnet`信息，脚本需要提供`getdetail`函数获取详细信息。
+  
+### 番组日历脚本
+此类脚本用于提供番组日历，尽管可以在bgm_calendar下放置多个脚本，但KikoPlay只会使用一个
+
+ - `function getseason()`
+
+   > 返回：Array[[BgmSeason](#bgmseason)]
+
+   获取番组分季列表，例如2021-01, 2021-04, 2021-07,...
+
+ - `function getbgmlist(season)`
+
+   > season：[BgmSeason](#bgmseason)
+   >
+   > 返回： Array[[BgmItem](#bgmitem)]
+
+   获取season下的番剧列表
+
 
 ## KikoPlay API
 
@@ -591,5 +613,28 @@ KikoPlay传递到脚本时，staff的格式为：
         [key]=value,
         ....
     }
+}
+```
+### BgmSeason
+```lua
+{
+    ["title"]=string,   --分季标题
+    ["data"]=string     --脚本可以自行存放一些数据
+}
+```
+### BgmItem
+```lua
+{
+    ["title"]=string,       --分季标题
+    ["weekday"]=number,     --放送星期，取值0(星期日)~6(星期六)
+    ["time"]=string,        --放送时间
+    ["date"]=string,        --放送日期
+    ["isnew"]=bool,         --是否新番
+    ["bgmid"]=string,       --bangumi id
+    ["sites"]=Array[{
+      ["name"]=string,
+      ["url"]=string
+    },...],                     --放送站点列表
+    ["focus"]=bool          --用户是否关注
 }
 ```
