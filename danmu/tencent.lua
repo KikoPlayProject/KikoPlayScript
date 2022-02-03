@@ -212,7 +212,6 @@ function danmu(source)
     if source_obj["targetid"] ~= nil then
         return nil, downloadDanmu(source_obj["targetid"], source_obj["pieces"])
     end
-    kiko.log(source_obj)
     local url = source_obj["url"]
     if url == nil then return nil, {} end
     local err, reply = kiko.httpget(url)
