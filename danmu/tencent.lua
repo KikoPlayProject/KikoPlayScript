@@ -2,7 +2,7 @@ info = {
     ["name"] = "腾讯视频",
     ["id"] = "Kikyou.d.Tencent",
 	["desc"] = "腾讯视频弹幕脚本",
-	["version"] = "0.1"
+	["version"] = "0.2"
 }
 
 supportedURLsRe = {
@@ -212,7 +212,7 @@ function danmu(source)
     if source_obj["targetid"] ~= nil then
         return nil, downloadDanmu(source_obj["targetid"], source_obj["pieces"])
     end
-
+    kiko.log(source_obj)
     local url = source_obj["url"]
     if url == nil then return nil, {} end
     local err, reply = kiko.httpget(url)
@@ -230,19 +230,26 @@ function danmu(source)
     source["duration"] = obj["duration"]
     source_obj["vid"] = obj["vid"]
     source_obj["pieces"] = math.ceil(source["duration"] / 30)
-    local err, reply = kiko.httpget("http://bullet.video.qq.com/fcgi-bin/target/regist", {["vid"]=source_obj["vid"]})
-    if err ~= nil then error(err) end
-    local content = reply["content"]
 
-    local xmlreader = kiko.xmlreader(content)
-    while not xmlreader:atend() do
-        if xmlreader:startelem() then
-            if xmlreader:name()=="targetid" then
-                source_obj["targetid"] = xmlreader:elemtext()
-                break
-            end
+    local post_data_table = {
+        ["wRegistType"] = 2,
+        ["vecIdList"] = {
+            source_obj["vid"]
+        }
+    }
+    local _, post_data = kiko.table2json(post_data_table)
+    local target_id_api = "https://access.video.qq.com/danmu_manage/regist?vappid=97767206&vsecret=c0bdcbae120669fff425d0ef853674614aa659c605a613a4&raw=1"
+    local header = { ["Content-Type"]="application/json" }
+    local err, reply = kiko.httppost(target_id_api, post_data, header)
+    if err ~= nil then error(err) end
+    local err, target_reply = kiko.json2table(reply["content"])
+    if err ~= nil then error(err) end
+    local target_id_info = target_reply["data"]["stMap"][source_obj["vid"]]["strDanMuKey"]
+    for _, v in ipairs(string.split(target_id_info, "&")) do
+        if string.startsWith(v, "targetid=") then
+            source_obj["targetid"] = string.sub(v, string.len("targetid=")+1)
+            break
         end
-        xmlreader:readnext()
     end
     local _, data_str = kiko.table2json(source_obj)
     source["data"] = data_str
