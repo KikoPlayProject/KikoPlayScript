@@ -9,8 +9,8 @@ settings = {
     ["result_type"]={
         ["title"]="搜索结果类型",
         ["default"]="2",
-        ["desc"]="搜索条目类型， 2： 动画  3：三次元",
-        ["choices"]="2,3"
+        ["desc"]="搜索条目类型\n 1: 书籍 2： 动画 3：音乐 4：游戏 6：三次元",
+        ["choices"]="1,2,3,4,6"
     },
     ["cover_quality"]={
         ["title"]="封面图质量",
