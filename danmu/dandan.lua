@@ -2,7 +2,7 @@ info = {
     ["name"] = "Dandan",
     ["id"] = "Kikyou.d.Dandan",
 	["desc"] = "弹弹Play弹幕脚本",
-	["version"] = "0.1"
+	["version"] = "0.2"
 }
 
 function string.split(str, sep)
@@ -46,20 +46,28 @@ function search(keyword)
         local animeTitle = item["animeTitle"]
         local eps = item["episodes"]
         if eps ~= nil then
-            for _, ep in ipairs(eps) do
-                table.insert(results, {
-                    ["title"] = ep["episodeTitle"],
-                    ["desc"] = animeTitle,
-                    ["data"] = string.format("%d", ep["episodeId"])
-                })
-            end
+            local _, data_str = kiko.table2json(eps)
+            table.insert(results, {
+                ["title"] = animeTitle,
+                ["desc"] = string.format("共 %d 集", #eps),
+                ["data"] = data_str
+            })
         end
     end
     return results
 end
 
 function epinfo(source)
-    return {source}
+    local err, eps = kiko.json2table(source["data"])
+    if err ~= nil then error(err) end
+    local results = {}
+    for _, ep in ipairs(eps) do
+        table.insert(results, {
+            ["title"] = ep["episodeTitle"],
+            ["data"] = string.format("%d", ep["episodeId"])
+        })
+    end
+    return results
 end
 
 function danmu(source)
