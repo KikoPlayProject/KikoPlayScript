@@ -1,5 +1,5 @@
 # <img src="kikoplay.png" width=24 /> KikoPlay 脚本开发参考 
-2022.01 By Kikyou，本文档适用于KikoPlay 0.8.2及以上版本
+2022.05 By Kikyou，本文档适用于KikoPlay 0.9.0及以上版本
 
 ## 目录
  - [脚本类型](#脚本类型)
@@ -66,6 +66,23 @@ settings = {
 ```lua
 function setoption(key, val)
     -- key为设置项的key，val为修改后的value
+end
+```
+0.9.0开始，脚本可以在 设置页 脚本列表 的右键菜单中添加自定义项目。在脚本中添加`scriptmenus` table，例如：
+```lua
+scriptmenus = {
+    {["title"]="", ["id"]="about"}
+}
+```
+`scriptmenus`是一个数组，每个元素包含`title`和`id`，其中`title`为展示的菜单文本，`id`用于标识菜单项，当用户点击菜单时，在`scriptmenuclick`中响应：
+```lua
+function scriptmenuclick(menuid)
+    if menuid == "about" then
+        kiko.dialog({
+            ["title"]="KikoPlay脚本菜单测试",
+            ["tip"]="这是来自KikoPlay的测试"
+        })
+    end
 end
 ```
 ### 弹幕脚本
@@ -221,7 +238,7 @@ end
     可选，如果在搜索中无法确定资源的`magnet`信息，脚本需要提供`getdetail`函数获取详细信息。
   
 ### 番组日历脚本
-此类脚本用于提供番组日历，尽管可以在bgm_calendar下放置多个脚本，但KikoPlay只会使用一个
+此类脚本用于提供番组日历。 0.9.0开始，KikoPlay支持多个番组日历
 
  - `function getseason()`
 
@@ -350,9 +367,22 @@ KikoPlay提供的API位于kiko表中，通过kiko.xxx调用
 
    计算文件或者数据的hash，第一个返回值表示是否出错，第二个返回值为hash值
 
+ - `base64(data, type)`
+
+   > `data`：string，待转换或者已经base64编码的数据
+   >
+   > `type`：string, 可选from/to, from：base64解码，to: base64编码，默认为from
+   >
+   > 返回：string/nil, string
+   0.9.0新增，base64转换函数，第一个返回值表示是否出错，第二个返回值为base64编码/解码结果
+
  - `log(...)`
 
-   打印输出到KikoPlay的“脚本日志”对话框中。支持多个参数，如果只有一个参数且类型为Tabel，会以json的形式将整个Tabel的内容输出
+   打印输出到KikoPlay的“脚本日志”对话框中。支持多个参数，如果只有一个参数且类型为Tabel，会以json的形式将整个Tabel的内容输出(注意，Table不能包含循环引用)
+
+ - `viewtable(table)`
+
+   0.9.0新增，可视化Tabel的全部内容，便于进行调试
 
  - `message(msg, flags)`
 
@@ -489,6 +519,56 @@ KikoPlay提供的API位于kiko表中，通过kiko.xxx调用
             table.insert(tags, parser:readcontent())
         end
         parser:readnext()
+    end
+    ```
+- `regex(str, option)`
+
+   > `str`：string，正则表达式内容
+   >
+   > `option`：string，可选，包含i,m,s,x四个选项，可多选：  
+   >  - i: CaseInsensitiveOption
+   >  - s: DotMatchesEverythingOption
+   >  - m: MultilineOption
+   >  - x: ExtendedPatternSyntaxOption
+   >
+   > 返回：kiko.regex
+
+    0.9.0新增，封装了`QRegularExpression`，提供了比lua自带的更为高级的正则表达式。kiko.regex提供如下方法：
+    ```lua
+    find(target, initpos)
+    --用当前表达式从initpos位置匹配一次目标字符串target，如果有匹配，返回 起始位置，结束位置，捕获组1，捕获组2，...，可代替Lua原生的string.find()。如果没有匹配，函数什么都不返回
+    gmatch(target)
+    --用当前表达式无限次匹配目标字符串，返回Lua风格迭代器，迭代时每次输出当次匹配结果，包括表达式完整匹配（首个返回值）和所有捕获组匹配到的内容，从Lua原生的string.gmatch()迁移则注意是否需要跳过首个返回值
+    gsub(target, repl)
+     --用当前表达式对目标字符串无限次执行替换操作，返回替换后的字符串，可接受字符串，表格（{[key]=value,...}）和函数格式的替换值，返回替换后的结果
+    setpattern(pattern, options)
+    --重新设置正则表达式，参数含义和构造函数相同
+    ```
+    简单示例：
+    ```lua
+    local reg = kiko.regex("(\\w+)\\s*(\\w+)")
+    local i, j , w, f= reg:find("hello world from Lua", 7)
+    print(("start: %d, end: %d"):format(i, j))  -- start: 7, end: 16
+    print(w, f)  -- world	from
+
+    reg:setpattern("\\$(.*?)\\$")
+    local x = reg:gsub("4+5 = $return 4+5$", function (o, s)
+        print("in gsub: ", o, s)  -- in gsub: 	$return 4+5$	return 4+5
+        return load(s)()
+      end)
+    print("gsub: ", x)  -- gsub: 	4+5 = 9
+
+    local x = reg:gsub("4+5 = $ret$", "99")
+    print("gsub: ", x)  -- gsub: 	4+5 = 99
+
+    reg:setpattern("(\\w)(\\w)(\\w)\\s(.+)")
+    local x = reg:gsub("abc abc", {a="Ki", b="ko", c="Play", abc="0.9.0"})
+    print("tabel gsub: ", x)  -- tabel gsub: 	KikoPlay 0.9.0
+
+    local s = "hello world from Lua"
+    reg:setpattern("\\w+")
+    for w in reg:gmatch(s) do
+        print("gmatch: ", w)
     end
     ```
 ## 数据类型
