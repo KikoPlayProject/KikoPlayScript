@@ -1,5 +1,5 @@
 info = {
-    ["name"] = "bgmlist",
+    ["name"] = "BgmList",
     ["id"] = "Kikyou.b.Bgmlist",
 	["desc"] = "bgmlist 番组日历",
 	["version"] = "0.1",
