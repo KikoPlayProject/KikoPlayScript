@@ -33,7 +33,7 @@ function search(keyword)
     local header = {
         ["Accept"] = "application/json"
     }
-    local err, reply = kiko.httpget("https://api.acplay.net/api/v2/search/episodes", query, header)
+    local err, reply = kiko.httpget("https://api.dandanplay.net/api/v2/search/episodes", query, header)
     if err ~= nil then error(err) end
     local content = reply["content"]
     local err, obj = kiko.json2table(content)
@@ -71,7 +71,7 @@ function epinfo(source)
 end
 
 function danmu(source)
-    local danmuUrl = "https://api.acplay.net/api/v2/comment/" .. source["data"]
+    local danmuUrl = "https://api.dandanplay.net/api/v2/comment/" .. source["data"]
     local err, reply = kiko.httpget(danmuUrl, {}, {["Accept"]="application/json"})
     if err ~= nil then error(err) end
     local danmuContent = reply["content"]

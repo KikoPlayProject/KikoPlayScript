@@ -26,7 +26,7 @@ function getEpInfo(epTitle)
 end
 
 function search(keyword)
-    local err, reply = kiko.httpget("https://api.acplay.net/api/v2/search/episodes", {["anime"]=keyword})
+    local err, reply = kiko.httpget("https://api.dandanplay.net/api/v2/search/episodes", {["anime"]=keyword})
     if err ~= nil then error(err) end
     local content = reply["content"]
     local err, obj = kiko.json2table(content)
@@ -92,7 +92,7 @@ function match(path)
         ["Accept"]="application/json"
     }
     local err, post_data = kiko.table2json(post)
-    local err, reply = kiko.httppost("https://api.acplay.net/api/v2/match", post_data, header)
+    local err, reply = kiko.httppost("https://api.dandanplay.net/api/v2/match", post_data, header)
     if err ~= nil then error(err) end
     local content = reply["content"]
     local err, obj = kiko.json2table(content)
