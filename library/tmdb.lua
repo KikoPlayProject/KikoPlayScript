@@ -1,15 +1,16 @@
--- TMDb Scraper
+-- TMDb+ Lib Scraper
 ----------------
 -- 公共部分
 -- 脚本信息
 info = {
-    ["name"] = "TMDb",
+    ["name"] = "TMDb+Lib",
     ["id"] = "Kikyou.l.TMDb",
-    ["desc"] = "The Movie Database (TMDb) 脚本 （测试中，不稳定） Edited by: kafovin \n"..
-                "从 themoviedb.org 刮削影剧元数据，也可设置选择刮削fanart的媒体图片、Emby的本地元数据。",
+    ["desc"] = "TMDb+ 资料刮削脚本  -  Edited by: kafovin \n"..
+                "从 The Movie Database (TMDb) 刮削影剧元数据，也可设置选择刮削fanart的媒体图片、Jellyfin/Emby的本地元数据、TVmaze的剧集演员。",
     --            "▲与前一版本不兼容▲ 建议搜索旧关联用`本地数据库`，仅刮削详旧资料细信息时设置`搜索-关键词作标题`为`1`。",
-    ["version"] = "0.2.2" -- 0.2.2.220508_build
+    ["version"] = "0.2.28" -- 0.2.28.220918_fix
 }
+
 -- 设置项
 -- `key`为设置项的`key`，`value`是一个`table`。设置项值`value`的类型都是字符串。
 -- 由于加载脚本后的特性，在脚本中，可以直接通过`settings["xxxx"]`获取设置项的值。
@@ -27,6 +28,13 @@ settings = {
                     "`Personal API Keys` 填入此项。（一般为一串字母数字）\n"..
                     "注意：若需要跳过刮削fanart.tv的图片，请将设置项 `元数据 - 图片主要来源` 设为 `TMDb_only`。",
     },
+    -- ["api_key_trakt"] = {
+    --     ["title"] = "API - Trakt的API密钥",
+    --     ["default"] = "<<API_Key_Here>>",
+    --     ["desc"] = "[选填项] 在 `trakt.tv` 注册账号，并把页面`https://trakt.tv/oauth/applications`中申请到的\n"..
+    --                 "`Client ID` 填入此项。（一般为一串字母数字）\n"..
+    --                 "注意：目前Trakt用于 用户记录，例如 评分媒体、标记媒体为 稍后看/已看过/已收集。",
+    -- },
     ["search_keyword_process"] = {
         ["title"] = "搜索 - 关键词处理",
         ["default"] = "filename",
@@ -50,7 +58,7 @@ settings = {
     ["search_list_season_epgroup"] = {
         ["title"] = "搜索 - 显示剧集其他版本",
         ["default"] = "0",
-        ["desc"] = "搜索操作中 是否搜索并显示 剧集其他版本及其各季。其他版本会把剧集以不同方式分季(如：原播出时间、数字出版等)。\n"..
+        ["desc"] = "搜索操作中 是否搜索并显示 剧集其他版本及其各季。其他版本会把剧集以不同方式分季(如：原播出时间、故事线、数字出版等)。\n"..
                 "0：不显示其他版本的季数 (默认)。 1：显示剧集其他版本及其各季数。", -- 丢弃`person`的演员搜索结果
         ["choices"] = "0,1",
     },
@@ -64,8 +72,8 @@ settings = {
         ["title"] = "匹配 - 数据来源",
         ["default"] = "online_TMDb_filename",
         ["desc"] = "自动匹配本地媒体文件的数据来源。值为<local_Emby_nfo>时需要用软件Emby提前刮削过。\n" ..
-                    "local_Emby_nfo：来自Emby在刮削TMDb媒体后 在本地媒体文件同目录存储元数据的 .nfo格式文件(内含.xml格式文本)；\n" ..
-                    "online_TMDb_filename：(不稳定) 从文件名模糊识别关键词，再用TMDb的API刮削元数据 (默认)。 (*￣▽￣）", -- 丢弃`person`的演员搜索结果
+                    "local_Emby_nfo：来自Jellyfin/Emby在刮削TMDb媒体后 在本地媒体文件同目录存储元数据的 .nfo格式文件(内含.xml格式文本) (不稳定/可能不兼容)；\n" ..
+                    "online_TMDb_filename：从文件名模糊识别关键词，再用TMDb的API刮削元数据 (不稳定) (默认)。 (*￣▽￣）", -- 丢弃`person`的演员搜索结果
         ["choices"] = "local_Emby_nfo,online_TMDb_filename",
     },
     ["match_priority"] = {
@@ -157,6 +165,20 @@ settings = {
                     "0：仅包括出现于或负责本季整季的演职员 (默认)。 1：包含前者，以及出现于或负责各集的演职员(按默认顺序)。",
         ["choices"] = "0,1",
     },
+    ["metadata_castcrew_source_cast"]={
+        ["title"] = "元数据 - 演员来源",
+        ["default"] = "TMDb_season",
+        ["desc"] = "元数据中演员表的数据来源。\n"..
+                    "TMDb_season：本电影或剧集本季的演员表 来自TMDb  (默认)。\n"..
+                    "TVmaze_show：剧集本季的演员表 来自TVmaze 对应的本剧集整剧(不是本季)，本电影 来源取默认，仅英文。",
+        ["choices"] = "TMDb_season,TVmaze_show",
+    },
+}
+
+scriptmenus = {
+    {["title"]="检测连接", ["id"]="detect_valid_api"},
+    {["title"]="使用方法", ["id"]="link_repo_usage"},
+    {["title"]="关于", ["id"]="display_dialog_about"},
 }
 
 -- 不会 在运行函数内更新值
@@ -180,7 +202,7 @@ Array={}
 Kikoplus={}
 Path={}
 -- 说明: 三目运算符 ((condition) and {trueCDo} or {falseCDo})[1] === (condition)?(trueCDo):(falseCDo)
--- (()and{}or{})[1]
+-- (() and{} or{})[1]
 
 -- TMDb图片配置
 Image_tmdb = {
@@ -220,10 +242,10 @@ Translation = {
     ["und-XX"] = {
         ["language"]={ [""]= "Others", ["Unknown"]= "Unknown", ["cmn"]="Mandarin", ["mis"]="", ["mul"]="Multi Languages", ["und"]="Undetermined", ["zxx"]="No Language", ["xx"]="No Language", ["00"]="No Language", },
         ["region"]={ [""]= "Others", ["Unknown"]= "Unknown", ["XX"]="Undetermined", ["XZ"]="International Water", ["ZZ"]="未识别", ["International"]="International", },
-        ["media_genre"] = {[""]= "Others", ["Unknown"]= "Unknown", },
+        ["media_genre"] = {[""]= "Others", ["Unknown"]= "Unknown", ["Adult"]= "Adult", },
         ["media_status"] = { [""]= "Others", ["Unknown"]= "Unknown", },
         ["media_type"] = { [""]= "Others", ["Unknown"]= "Unknown", },
-        ["character_gsub"] = {  },
+        ["character_gsub"] = { {"^$","Unknown Character"}, },
         ["department"] = { [""]= "Others", ["Unknown"]= "Unknown", },
         ["credit_job"] = { [""]= "Others", ["Unknown"]= "Unknown", },
         ["media_type_epgroup"] = { [1]= "Original air date", [2]= "Absolute", [3]= "DVD", [4]= "Digital", [5]= "Story arc", [6]= "Production", [7]= "TV", [""]= "Others", ["Unknown"]= "Unknown", },
@@ -274,7 +296,7 @@ Translation["zh-CN"] = {
         [10402] = "音乐", [9648] = "悬疑", [10763] = "新闻", [10764] = "真人", [10749] = "爱情",
         [10765] = "幻想", [878] = "科幻", [10766] = "连续剧", [10770] = "电视电影",
         [10767] = "访谈", [53] = "惊悚", [10752] = "战争", [10768] = "战争政治", [37] = "西部",
-        [""]="其他", ["Unknown"]= "未知",
+        [""]="其他", ["Unknown"]= "未知", ["Adult"]= "成人",
     },
     ["media_status"] = {
         ["Rumored"]= "传闻", ["Planned"]= "筹划",
@@ -290,7 +312,7 @@ Translation["zh-CN"] = {
         [""]= "其他", ["Unknown"]= "未知",
     },
     ["character_gsub"] = {
-        {"^Self$","自己"}, {"^Voice$","配音"}, {"^Cameo$","客串"}, {"^Special Guest$","特邀嘉宾"}, {"^Guest$","嘉宾"}, {"^Host$","主持"}, {"^Contestant$","参赛"}, {"^Performer$","演出"}, {"^Judge$","评委"},
+        {"^$","未知角色"}, {"^Self$","自己"}, {"^Voice$","配音"}, {"^Cameo$","客串"}, {"^Special Guest$","特邀嘉宾"}, {"^Guest$","嘉宾"}, {"^Host$","主持"}, {"^Contestant$","参赛"}, {"^Performer$","演出"}, {"^Judge$","评委"},
         {"Self %- ","自己 - "}, {" %(voice%)"," (配音)"}, {" %(cameo%)"," (客串)"}, {" %(special guest%)"," (特邀嘉宾)"}, {" %(guest%)"," (嘉宾)"}, {" %(host%)"," (主持)"},
         {" %- Self"," - 自己"}, {" %- Voice"," - 配音"}, {" %- Cameo"," - 客串"}, {" %- Special Guest"," - 特邀嘉宾"}, {" %- Guest"," - 嘉宾"}, {" %- Host"," - 主持"},
         {" %- Presenter"," - 主持"}, {" %- Various Characters"," - 各种角色"}, {" %- Participant"," - 参赛"}, {" %- Contestant"," - 参赛"}, {" %- Performer"," - 演出"}, {" %- Judge"," - 评委"},
@@ -547,7 +569,7 @@ function searchMediaInfo(keyword, settings_search_type, old_title)
     local query = {
         ["api_key"] = settings["api_key"],
         ["language"] = settings["metadata_lang"],
-        ["query"] = keyword,
+        ["query"] = string.gsub(keyword,"/\\%?"," "),
         ["page"] = Metadata_search_page,
         ["include_adult"] = Metadata_search_adult
     }
@@ -565,13 +587,14 @@ function searchMediaInfo(keyword, settings_search_type, old_title)
     -- tmdb_search_multi
     local err, reply = kiko.httpget(string.format("http://api.themoviedb.org/3/search/" .. settings_search_type),
         query, header)
-    if err ~= nil then
-        kiko.log("[ERROR] TMDb.API.reply-search."..settings_search_type..".httpget: ".. err)
+    if err ~= nil or (reply or{}).hasError then
+        kiko.log("[ERROR] TMDb.API.reply-search."..settings_search_type..".httpget: "..err..
+                (((reply or{}).hasError) and{" <"..math.floor((reply or{}).statusCode).."> "..(reply or{}).errInfo} or{""})[1])
         if tostring(err) == ("Host requires authentication") then
             kiko.message("[错误] 请在脚本设置中填写正确的 `TMDb的API密钥`！",1|8)
             kiko.execute(true, "cmd", {"/c", "start", "https://www.themoviedb.org/settings/api"})
         end
-        error(err)
+        error(err..(((reply or{}).hasError) and{" <"..math.floor((reply or{}).statusCode).."> "..(reply or{}).errInfo} or{""})[1])
     end
     --[[if reply["success"]=="false" or reply["success"]==false then
         err = reply["status_message"]
@@ -646,6 +669,11 @@ function searchMediaInfo(keyword, settings_search_type, old_title)
         -- data["popularity_num"] = tonumber(mediai["popularity"]or"")
         data["mo_is_adult"]= (( mediai["adult"]==nil or mediai["adult"]=="" )and{ nil }or{ tostring(mediai["adult"])=="true" })[1]
         data["mo_is_video"]= (( mediai["video"]==nil or mediai["video"]=="" )and{ nil }or{ tostring(mediai["video"])=="true" })[1]
+
+        data.update_info= {}
+        data.update_info.version= info.version
+        data.update_info.timestamp= os.time()
+        data.update_info.level_detail= "scrape"
 
         -- season_number, episode_count,
         if data["media_type"] == "movie" then
@@ -854,7 +882,7 @@ function searchMediaInfo(keyword, settings_search_type, old_title)
             -- Table:obj -> Array:mediai
             -- local tvSeasonsIxs = {}
             for _, tvSeasonsIx in pairs(objTv['seasons'] or {}) do
-                data["tv_season_id"] = tonumber(mediai["id"]or"")
+                data["tv_season_id"] = tonumber(tvSeasonsIx.id or"")
                 if tonumber(data.tv_season_id) then
                     data.tv_season_id= math.floor(tonumber(data.tv_season_id))
                 end
@@ -990,6 +1018,15 @@ function searchMediaInfo(keyword, settings_search_type, old_title)
                 end
                 for replyEgI, replyEgV in ipairs(replyEg) do
                     contentEg = replyEgV["content"]
+                    if (replyEgV or{}).hasError then
+                        kiko.log("[ERROR] TMDb.API.reply-tv/episode_group/eg_id."..(settings["metadata_lang"] or"").."."..".httpget: " .. err..
+                                (((replyEgV or{}).hasError) and{" <"..math.floor((replyEgV or{}).statusCode).."> "..(replyEgV or{}).errInfo} or{""})[1])
+                        if (((replyEgV or{}).hasError) and{" <"..math.floor((replyEgV or{}).statusCode).."> "..(replyEgV or{}).errInfo} or{""})[1] == ("Host requires authentication") then
+                            kiko.message("[错误] 请在脚本设置中填写正确的 `TMDb的API密钥`！",1|8)
+                            kiko.execute(true, "cmd", {"/c", "start", "https://www.themoviedb.org/settings/api"})
+                        end
+                        error(err..(((replyEgV or{}).hasError) and{" <"..math.floor((replyEgV or{}).statusCode).."> "..(replyEgV or{}).errInfo} or{""})[1])
+                    end
                     local objEgi= {}
                     err, objEgi = kiko.json2table(contentEg)
                     if err ~= nil then
@@ -1191,6 +1228,16 @@ function getep(anime)
         -- kiko.log(string.format("[INFO]  Movie [%s] on Episode %d :[%s] %s", anime_data["original_title"], epIndex,epType, epName))
         -- tv
     elseif (anime_data["media_type"] == "tv") then
+        local function isNormalTitle(seasonEpsI)
+            if table.isEmpty(seasonEpsI) then return true end
+            seasonEpsI.episode_number = math.floor(tonumber(seasonEpsI.episode_number))
+            if (seasonEpsI.name == "第 " .. seasonEpsI.episode_number .. " 集" or
+                seasonEpsI.name == "第" .. seasonEpsI.episode_number .. "集" or seasonEpsI.name == "第" ..
+                seasonEpsI.episode_number .. "話" or seasonEpsI.name == "Episode " .. seasonEpsI.episode_number) then
+                return true
+            else return false
+            end
+        end
 
         if anime_data.tv_is_epgroup == "true" or anime_data.tv_is_epgroup == true then
             local objTgll= Kikoplus.httpgetMediaId({
@@ -1205,48 +1252,41 @@ function getep(anime)
                     break
                 end
             end
-            local normalEpTitle = false
             if (table.isEmpty(objTgllEg) or #objTgllEg == 0) then
                 return eps
             end
-            local seasonEpsI = objTgllEg[#objTgllEg] or{}
-            if not table.isEmpty(seasonEpsI) and tonumber(seasonEpsI.episode_number) then
-                    seasonEpsI.episode_number = math.floor(tonumber(seasonEpsI.episode_number))
-            else seasonEpsI= {}
+            
+            local normalEplTitle = false -- at least one normal
+            for _, seasonEpsI in ipairs(objTgllEg) do
+                normalEplTitle = normalEplTitle or isNormalTitle(seasonEpsI)
             end
-            if (seasonEpsI.name == "第 " .. seasonEpsI.episode_number .. " 集" or seasonEpsI.name == "第" ..
-                seasonEpsI.episode_number .. "話" or seasonEpsI.name == "Episode " .. seasonEpsI.episode_number) then
-                normalEpTitle = true
-            end
-            if normalEpTitle and (settings["metadata_lang"] ~= (string.isEmpty(anime_data.original_language) and{"en"} or{anime_data.original_language})[1]) then
+            local objTgolEg = nil
+            if normalEplTitle and (settings["metadata_lang"] ~= (string.isEmpty(anime_data.original_language) and{"en"} or{anime_data.original_language})[1]) then
                 local objTgol= Kikoplus.httpgetMediaId({
                     ["api_key"] = settings["api_key"],
                     ["language"] = (string.isEmpty(anime_data.original_language) and{"en"} or{anime_data.original_language})[1],
                 },"tv/episode_group/"..anime_data.tv_epgroup_id)
 
-                local objTgolEg = ((objTgol.groups or{})[anime_data.season_number] or{}).episodes
-                local seasonEpsIO = objTgolEg[#objTgolEg] or{}
-                if not table.isEmpty(seasonEpsIO) and tonumber(seasonEpsIO.episode_number) then
-                    seasonEpsIO.episode_number = math.floor(tonumber(seasonEpsIO.episode_number))
-                else seasonEpsIO= {}
+                objTgolEg = ((objTgol.groups or{})[anime_data.season_number] or{}).episodes
+                local normalEpoTitle = true -- each one is normal
+                for _, seasonEpsI in ipairs(objTgolEg) do
+                    normalEpoTitle = normalEpoTitle and isNormalTitle(seasonEpsI)
                 end
-
-                normalEpTitle = false
-                seasonEpsIO.episode_number = math.floor(tonumber(seasonEpsIO.episode_number))
-                if (seasonEpsIO.name == "第 " .. seasonEpsIO.episode_number .. " 集" or seasonEpsIO.name == "第" ..
-                    seasonEpsIO.episode_number .. "話" or seasonEpsIO.name == "Episode " ..
-                    seasonEpsIO.episode_number) then
-                    normalEpTitle = true
-                end
-                if (normalEpTitle ~= true) then
-                    objTgllEg = objTgolEg
+                if (normalEpoTitle == true) then
+                    objTgolEg= nil
                 end
             end
 
             local orderOffsetTmp= 1- objTgllEg[1].order
             for seasonEpsK, seasonEpsV in pairs(objTgllEg or {}) do
-                epName = seasonEpsV.name
-                epIndex = math.floor(tonumber(seasonEpsV.order)) +orderOffsetTmp
+                if isNormalTitle(seasonEpsV) and not table.isEmpty(objTgolEg) and
+                        not table.isEmpty((objTgolEg or{})[seasonEpsK]) and not isNormalTitle((objTgolEg or{})[seasonEpsK]) then
+                    epName = (objTgolEg or{})[seasonEpsK].name
+                    epIndex = math.floor(tonumber(seasonEpsV.order)) +orderOffsetTmp
+                else
+                    epName = seasonEpsV.name
+                    epIndex = math.floor(tonumber(seasonEpsV.order)) +orderOffsetTmp
+                end
 
                 if anime_data.season_number == 0 then
                     epType = 2
@@ -1276,13 +1316,14 @@ function getep(anime)
             local err, reply = kiko.httpget(string.format("http://api.themoviedb.org/3/tv/" .. anime_data["media_id"] ..
                                                     "/season/" .. (anime_data["season_number"])), query, header)
 
-            if err ~= nil then
-                kiko.log("[ERROR] TMDb.API.reply-getep.tv.id.season.httpget: " .. err)
+            if err ~= nil or (reply or{}).hasError then
+                kiko.log("[ERROR] TMDb.API.reply-getep.tv.id.season.httpget: " .. err..
+                        (((reply or{}).hasError) and{" <"..math.floor((reply or{}).statusCode).."> "..(reply or{}).errInfo} or{""})[1])
                 if tostring(err) == ("Host requires authentication") then
                     kiko.message("[错误] 请在脚本设置中填写正确的 `TMDb的API密钥`！",1|8)
                     kiko.execute(true, "cmd", {"/c", "start", "https://www.themoviedb.org/settings/api"})
                 end
-                error(err)
+                error(err.. (((reply or{}).hasError) and{" <"..math.floor((reply or{}).statusCode).."> "..(reply or{}).errInfo} or{""})[1])
             end
             -- json:reply -> Table:obj
             local content = reply["content"]
@@ -1291,64 +1332,61 @@ function getep(anime)
                 kiko.log("[ERROR] TMDb.API.reply-getep.json2table: " .. err)
                 error(err)
             end
-
-            local normalEpTitle = false
             if (objS["episodes"] == nil or #(objS["episodes"]) == 0) then
                 return eps
             end
-            local seasonEpsI = objS["episodes"][#(objS.episodes)] or{} -- 以最后一集为例
-            if seasonEpsI ~= nil then
-                -- number:集序数
-                seasonEpsI["episode_number"] = math.floor(tonumber(seasonEpsI["episode_number"]))
+            
+            local normalEplTitle = false -- at least one normal
+            for _, seasonEpsI in ipairs(objS.episodes) do
+                normalEplTitle = normalEplTitle or isNormalTitle(seasonEpsI)
             end
-            -- 对应单纯数字标题，而非有对应剧情名称的集标题
-            if (seasonEpsI["name"] == "第 " .. seasonEpsI["episode_number"] .. " 集" or seasonEpsI["name"] == "第" ..
-                seasonEpsI["episode_number"] .. "話" or seasonEpsI["name"] == "Episode " .. seasonEpsI["episode_number"]) then
-                normalEpTitle = true
-            end
-            if (normalEpTitle and string.sub(query["language"], 1, 2) ~= anime_data["original_language"]) then
+            local objSO = nil
+            if (normalEplTitle and string.sub(query["language"], 1, 2) ~= anime_data["original_language"]) then
                 -- 获取集标题
-                -- and (query["language"] == "zh-CN" or query["language"] == "zh-HK" or query["language"] == "zh-TW" or query["language"] == "zh")
                 query["language"] = anime_data["original_language"]
                 -- 获取 http get 请求 - 查询 特定tmdbid的剧集的 特定季序数的 原语言的 媒体信息
                 local err, replyO = kiko.httpget(string.format( "http://api.themoviedb.org/3/tv/" .. anime_data["media_id"] ..
                                                             "/season/" .. anime_data["season_number"]), query, header)
-                if err ~= nil then
-                    kiko.log("[ERROR] TMDb.API.reply-getep.tv.id.season.lang.httpget: " .. err)
+                if err ~= nil or (replyO or{}).hasError then
+                    kiko.log("[ERROR] TMDb.API.reply-getep.tv.id.season.lang.httpget: " .. err..
+                            (((replyO or{}).hasError) and{" <"..math.floor((replyO or{}).statusCode).."> "..(replyO or{}).errInfo} or{""})[1])
                     if tostring(err) == ("Host requires authentication") then
                         kiko.message("[错误] 请在脚本设置中填写正确的 `TMDb的API密钥`！",1|8)
                         kiko.execute(true, "cmd", {"/c", "start", "https://www.themoviedb.org/settings/api"})
                     end
-                    error(err)
+                    error(err..(((replyO or{}).hasError) and{" <"..math.floor((replyO or{}).statusCode).."> "..(replyO or{}).errInfo} or{""})[1])
                 end
                 -- json:reply -> Table:obj
                 local contentO = replyO["content"]
-                local err, objSO = kiko.json2table(contentO)
+                err, objSO = kiko.json2table(contentO)
                 if err ~= nil then
                     kiko.log("[ERROR] TMDb.API.reply-getep.tv.id.season.lang.json2table: " .. err)
                     error(err)
                 end
-                local seasonEpsIO = objSO['episodes'][1]
-                normalEpTitle = false
-                seasonEpsIO["episode_number"] = math.floor(tonumber(seasonEpsIO["episode_number"]))
-                if (seasonEpsIO["name"] == "第 " .. seasonEpsIO["episode_number"] .. " 集" or seasonEpsIO["name"] == "第" ..
-                    seasonEpsIO["episode_number"] .. "話" or seasonEpsIO["name"] == "Episode " ..
-                    seasonEpsIO["episode_number"]) then
-                    normalEpTitle = true
+                local normalEpoTitle = true -- each one is normal
+                for _, seasonEpsI in ipairs(objSO.episodes) do
+                    normalEpoTitle = normalEpoTitle and isNormalTitle(seasonEpsI)
                 end
-                if (normalEpTitle ~= true) then
-                    objS = objSO
+                if (normalEpoTitle == true) then
+                    objSO= nil
                 end
             end
-            for _, seasonEpsIx in pairs(objS['episodes'] or {}) do
-
-                epName = seasonEpsIx["name"] -- 集标题
-                epIndex = math.floor(tonumber(seasonEpsIx["episode_number"])) -- 集序数
-                -- seasonEpsIx["air_date"]
-                -- seasonEpsIx["overview"]
-                -- seasonEpsIx["vote_average"]
-                -- seasonEpsIx["crew"] --array
-                -- seasonEpsIx["guest_stars"] --array
+            -- local orderOffsetTmp= 1- objS.episodes[1].order
+            for seasonEpsK, seasonEpsV in pairs(objS.episodes or {}) do
+                if isNormalTitle(seasonEpsV) and not table.isEmpty((objSO or{}).episodes) and
+                        not table.isEmpty(((objSO or{}).episodes or{})[seasonEpsK]) and not isNormalTitle(((objSO or{}).episodes or{})[seasonEpsK]) then
+                    epName = ((objSO or{}).episodes or{})[seasonEpsK].name
+                    epIndex = math.floor(tonumber(seasonEpsV.episode_number)) -- +orderOffsetTmp
+                else
+                    epName = seasonEpsV.name
+                    epIndex = math.floor(tonumber(seasonEpsV.episode_number)) -- +orderOffsetTmp
+                end
+                
+                -- seasonEpsV["air_date"]
+                -- seasonEpsV["overview"]
+                -- seasonEpsV["vote_average"]
+                -- seasonEpsV["crew"] --array
+                -- seasonEpsV["guest_stars"] --array
 
                 -- 集类型
                 if anime_data["season_number"] == 0 then
@@ -1540,6 +1578,48 @@ function detail(anime)
         if string.isEmpty(anime_data.original_language) then
             anime_data.original_language = ((anime_data.spoken_language or{})[1] or{}).iso_639_1
         end
+
+        if table.isEmpty(anime_data.update_info) then
+            anime_data.update_info= {}
+            anime_data.update_info.version= info.version
+            anime_data.update_info.timestamp= os.time()
+            anime_data.update_info.level_detail= "scrape"
+        else
+            if string.isEmpty(anime_data.update_info.version) or anime_data.update_info.version < info.version then
+                -- from lower version
+                anime_data.update_info.version= info.version
+            elseif anime_data.update_info.version > info.version then
+                -- from higher version
+                anime_data.update_info.version= info.version
+            else
+                -- from same version
+                local tmp_ac = nil
+                -- anime_data.update_info.version= info.version
+            end
+            -- 7*24*3600=604800
+            if string.isEmpty(anime_data.update_info.timestamp) or os.time() - anime_data.update_info.timestamp > 604800 then
+                -- updated more than 1 week ago
+                anime_data.update_info.timestamp= os.time()
+            elseif os.time() - anime_data.update_info.timestamp < 0 then
+                -- updated in the future
+                anime_data.update_info.timestamp= os.time()
+            else
+                -- updated in the past 1 week
+                local tmp_ac = nil
+                -- anime_data.update_info.timestamp= os.time()
+            end
+            if anime_data.update_info.level_detail == "scrape" then
+                -- from reult of search
+                anime_data.update_info.level_detail= "detail"
+            elseif anime_data.update_info.level_detail == "detail" then
+                -- from reult of detail
+                local tmp_ac = nil
+                -- anime_data.update_info.level_detail= "detail"
+            else
+                -- from reult of others
+                anime_data.update_info.level_detail= "detail"
+            end
+        end
     end
     if anime_data.media_type=="movie" then
         anime_data["mo_is_adult"]= (( objMoll["adult"]==nil or objMoll["adult"]=="" )and{ nil }or{ tostring(objMoll["adult"])=="true" })[1]
@@ -1610,6 +1690,7 @@ function detail(anime)
 
         if anime_data.tv_is_epgroup~="true" and anime_data.tv_is_epgroup ~=true then
             anime_data["release_date"] = objTsll["air_date"] -- 首播日期7
+            anime_data.tv_season_id = ((tonumber(objTsll.id) ==nil)and{nil}or{tostring(math.floor(tonumber(objTsll.id)))})[1]
             if not string.isEmpty(objTsll.overview) and objTsll.overview~=anime_data.overview and
                     objTsll.overview~=anime_data.title and objTsll.overview~=anime_data.original_title then
                 anime_data.overview_season = string.gsub(objTsll.overview, "\r?\n\r?\n", "\n")
@@ -1789,6 +1870,18 @@ function detail(anime)
         end
     end
 
+    local objEi=  table.deepCopy(((anime_data.media_type=="movie")and{ objMoll.external_ids }or{ objTvll.external_ids })[1]) or{}
+    anime_data.imdb_id= ( string.isEmpty(objEi.imdb_id) and{ nil }or{ objEi.imdb_id })[1]
+    anime_data.facebook_id= ( string.isEmpty(objEi.facebook_id) and{ nil }or{ objEi.facebook_id })[1]
+    anime_data.instagram_id= ( string.isEmpty(objEi.instagram_id) and{ nil }or{ objEi.instagram_id })[1]
+    anime_data.twitter_id= ( string.isEmpty(objEi.twitter_id) and{ nil }or{ objEi.twitter_id })[1]
+    if anime_data.media_type=="tv" and anime_data.tv_is_epgroup~="true" and anime_data.tv_is_epgroup ~=true then
+        anime_data.tvdb_id= ((objEi.tvdb_id ==nil)and{nil}or{tostring(math.floor(tonumber(objEi.tvdb_id)))})[1]
+        anime_data.tvdb_id_season= (((objTsll.external_ids or{}).tvdb_id ==nil)and{nil}or{
+                tostring(math.floor(tonumber((objTsll.external_ids or{}).tvdb_id)))})[1]
+    end
+    objEi={}
+
     local objCr= {}
     if anime_data.media_type=="movie" then
         objCr= table.deepCopy(objMoll.credits)
@@ -1811,14 +1904,14 @@ function detail(anime)
         if #(anime_data["person_cast"])>=Metadata_person_max_cast then break end
         local crtText = ((creditTsall)and
                 { Array.extendUnique({},value.roles,"character") or{} } or
-                { {( string.isEmpty(value.character) and{ nil }or{ value.character })[1]} })[1]
+                { string.isEmpty(value.character) and{ "" }or{ value.character } })[1]
         table.insert(anime_data["person_cast"],{
             -- ["gender"]= (( tonumber(value.gender)==1 or tonumber(value.gender)==2 )and{ tonumber(value.gender) }or{ nil })[1],
             ["name"]= (( string.isEmpty(value.name) )and{
                 (( string.isEmpty(value.original_name))and{ nil }or{ value.original_name })[1] }or{ value.name })[1],
             ["original_name"]= (( string.isEmpty(value.original_name))and{ nil }or{ value.original_name })[1],
             ["profile_path"]= (( string.isEmpty(value.profile_path))and{ nil }or{ value.profile_path })[1],
-            ["character"]= table.deepCopy(crtText) or"",
+            ["character"]= table.deepCopy(crtText) or{""},
             ["department"]= "Actors",
             ["job"]={"Actor"},
         
@@ -1846,8 +1939,8 @@ function detail(anime)
                     { nil }or{ value.original_name })[1] }or{ value.name })[1]
         end
         table.insert(tmpAnimeCharacter,{
-            ["name"]= Array.toStringLine(crtText,"|") or"",
-            ["actor"]=tmpAnimeCharacterName or"",
+            ["name"]= ((#crtText)~=0 and{Array.toStringLine(crtText,"|")} or{"-"})[1],
+            ["actor"]=(string.isEmpty(tmpAnimeCharacterName) and{"-"} or{tmpAnimeCharacterName})[1],
             ["link"]="https://www.themoviedb.org/person/"..value.id,
             ["imgurl"]= (( string.isEmpty(value.profile_path))and{ nil }or{
                     Image_tmdb.prefix..Image_tmdb.profile[Image_tmdb.max_ix] .. value.profile_path })[1],
@@ -1900,11 +1993,77 @@ function detail(anime)
                     { nil }or{ value.original_name })[1] }or{ value.name })[1]
         end
         tmpAnimeStaff= tmpAnimeStaff ..(((Translation[settings["metadata_lang"]] or{}).department or{})[value.department or""] or value.department or"").."-"..
-                    (Array.toStringLine(jobText,",") or"") ..":".. (tmpAnimeStaffName or"") ..";"
+                    (Array.toStringLine(jobText,",") or"") ..":".. ((string.isEmpty(tmpAnimeStaffName) and{"-"} or{tmpAnimeStaffName})[1]) ..";"
         ::continue_detail_ccc_crew::
     end
     tmpAnimeStaff= tmpAnimeStaff or "" -- anime_data.person_crew.id = objCr.id
     objCr={}
+    if anime_data["media_type"]=="tv" and settings["metadata_castcrew_source_cast"]== "TVmaze_show" and not string.isEmpty(anime_data.imdb_id) then
+        if tonumber(anime_data.tvmaze_id)==nil then
+            local queryTvmz = {}
+            local header = {["Accept"] = "application/json"}
+            local replyTvmz
+            err, replyTvmz = kiko.httpget(string.format("https://api.tvmaze.com/lookup/shows?imdb=" ..
+                    anime_data.imdb_id), queryTvmz, header)
+            if err ~= nil or (replyTvmz or{}).hasError then
+                kiko.log("[ERROR] TVmaze.API.reply-details."..anime_data["media_type"] .. ".cast.httpget: " .. err..
+                        (((replyTvmz or{}).hasError) and{" <"..math.floor((replyTvmz or{}).statusCode).."> "..(replyTvmz or{}).errInfo} or{""})[1])
+                goto continue_detail_id_tvmz
+            end
+            local contentTvmz = replyTvmz["content"]
+            local err, objTvmz = kiko.json2table(contentTvmz)
+            if err ~= nil then
+                kiko.log("[ERROR] TVmaze.API.reply-details."..anime_data["media_type"] .. ".cast.json2table: " .. err)
+                -- error(err)
+                goto continue_detail_id_tvmz
+            end
+            anime_data.tvmaze_id= ((tonumber(objTvmz.id) ==nil) and{nil} or{tostring(math.floor(tonumber(objTvmz.id)))})[1]
+            ::continue_detail_id_tvmz::
+        end
+        if tonumber(anime_data.tvmaze_id)~=nil then
+            local queryTvmz = {}
+            local header = {["Accept"] = "application/json"}
+            local replyTvmz
+            err, replyTvmz = kiko.httpget(string.format("https://api.tvmaze.com/shows/" ..
+                    anime_data.tvmaze_id .."/cast"), queryTvmz, header)
+            if err ~= nil or (replyTvmz or{}).hasError then
+                kiko.log("[ERROR] TVmaze.API.reply-details."..anime_data["media_type"] .. ".cast.httpget: " .. err..
+                        (((replyTvmz or{}).hasError) and{" <"..math.floor((replyTvmz or{}).statusCode).."> "..(replyTvmz or{}).errInfo} or{""})[1])
+                goto continue_detail_ccc_cast_tvmz
+            end
+            local contentTvmz = replyTvmz["content"]
+            local err, objTvmz = kiko.json2table(contentTvmz)
+            if err ~= nil then
+                kiko.log("[ERROR] TVmaze.API.reply-details."..anime_data["media_type"] .. ".cast.json2table: " .. err)
+                error(err)
+                goto continue_detail_ccc_cast_tvmz
+            end
+            local tmpAnimeCharacterTm= {}
+            for _, value in ipairs(objTvmz) do
+                value.person=  (table.isEmpty(value.person) and{{}} or{value.person})[1]
+                value.character= (table.isEmpty(value.character) and{{}} or{value.character})[1]
+                value.person.name=(string.isEmpty(value.person.name) and{"-"} or{value.person.name})[1]
+                value.character.name=(string.isEmpty(value.character.name) and{"-"} or{value.character.name})[1]
+                for _, crtGpair in ipairs((Translation[settings["metadata_lang"]] or{}).character_gsub or{}) do
+                    value.character.name = string.gsub(value.character.name or"",crtGpair[1] or"",crtGpair[2] or crtGpair[1] or"")
+                end
+                table.insert(tmpAnimeCharacterTm,{
+                    ["name"]= (string.isEmpty(value.person.name) and{"-"} or{value.person.name})[1],
+                    ["actor"]= (string.isEmpty(value.character.name) and{"-"} or{value.character.name})[1],
+                    ["link"]= (( string.isEmpty(value.character.url)) and{ ((string.isEmpty(value.person.url))
+                            and{nil} or{value.person.url})[1] } or{value.character.url})[1],
+                    ["imgurl"]= (( string.isEmpty((value.character.image or{}).original)) and{ ((string.isEmpty((value.person.image or{}).original))
+                            and{nil} or{(value.person.image or{}).original})[1] } or{(value.character.image or{}).original})[1],
+                })
+            end
+            if not table.isEmpty(tmpAnimeCharacterTm) then
+                Array.extendUniqueFields(tmpAnimeCharacterTm,anime.crt,{"name","actor"},true,false)
+                tmpAnimeCharacter= tmpAnimeCharacterTm or tmpAnimeCharacter or{} -- anime_data.person_cast.id = objCr.id
+                -- tmpAnimeCharacterTm= {}
+            end
+            ::continue_detail_ccc_cast_tvmz::
+        end
+    end
 
     local objMc={}
     anime_data.content_rating= {}
@@ -1956,18 +2115,6 @@ function detail(anime)
     Array.extendUniqueFields(anime_data.keyword_names,tmp_keyword_names,{"id","name"},true,false)
     objMk, tmp_keyword_names= {},{}
 
-    local objEi=  table.deepCopy(((anime_data.media_type=="movie")and{ objMoll.external_ids }or{ objTvll.external_ids })[1]) or{}
-    anime_data.imdb_id= ( string.isEmpty(objEi.imdb_id) and{ nil }or{ objEi.imdb_id })[1]
-    anime_data.facebook_id= ( string.isEmpty(objEi.facebook_id) and{ nil }or{ objEi.facebook_id })[1]
-    anime_data.instagram_id= ( string.isEmpty(objEi.instagram_id) and{ nil }or{ objEi.instagram_id })[1]
-    anime_data.twitter_id= ( string.isEmpty(objEi.twitter_id) and{ nil }or{ objEi.twitter_id })[1]
-    if anime_data.media_type=="tv" and anime_data.tv_is_epgroup~="true" and anime_data.tv_is_epgroup ~=true then
-        anime_data.tvdb_id= ((objEi.tvdb_id ==nil)and{nil}or{tostring(math.floor(tonumber(objEi.tvdb_id)))})[1]
-        anime_data.tvdb_id_season= (((objTsll.external_ids or{}).tvdb_id ==nil)and{nil}or{
-                tostring(math.floor(tonumber((objTsll.external_ids or{}).tvdb_id)))})[1]
-    end
-    objEi={}
-
     local mImgPTmp = "TMDb_only"
     if settings["metadata_image_priority"]=="fanart_prior"
         or settings["metadata_image_priority"]=="TMDb_only"
@@ -1998,8 +2145,9 @@ function detail(anime)
         else
             goto jumpover_fanart_scraping
         end
-        if err ~= nil then
-            kiko.log("[ERROR] fanart.API.reply-details."..anime_data["media_type"] .. ".httpget: " .. err)
+        if err ~= nil or (replyFan or{}).hasError then
+            kiko.log("[ERROR] fanart.API.reply-details."..anime_data["media_type"] .. ".httpget: " .. err..
+                    (((replyFan or{}).hasError) and{" <"..math.floor((replyFan or{}).statusCode).."> "..(replyFan or{}).errInfo} or{""})[1])
             if tostring(err) == ("Host requires authentication") then
                 kiko.message("[错误] 请在脚本设置中填写正确的 `fanart的API密钥`！\n"..
                         "或把设置项`元数据 - 图片主要来源`改为`TMDb_only`以取消从fanart刮削。",1|8)
@@ -2726,6 +2874,7 @@ function match(path)
                  "(" .. (epTypeName[epinfo["type"]] or "") .. ") " .. (epinfo["index"] or "") .. (epinfo["name"] or ""))
         kiko.log("Finished matching online succeeded.")
 
+        mediainfo.scriptId = "Kikyou.l.TMDb"
         return {
             ["success"] = true,
             ["anime"] = mediainfo,
@@ -3496,10 +3645,10 @@ menus = {{
         ["title"] = "打开TMDb/IMDb页面",
         ["id"] = "open_webpage_media_page",
     },{
-        ["title"] = "使用贴吧/豆瓣搜索",
+        ["title"] = "使用豆瓣/贴吧搜索",
         ["id"] = "open_webpage_media_search",
     },{
-        ["title"] = "打开fanart",
+        ["title"] = "打开fanart页面",
         ["id"] = "open_webpage_media_artwork",
     },{
         ["title"] = "使用字幕搜索",
@@ -3507,6 +3656,21 @@ menus = {{
     },{
         ["title"] = "显示媒体元数据",
         ["id"] = "show_media_matadata",
+    -- },{
+    --     ["title"] = "显示媒体元数据表",
+    --     ["id"] = "show_media_matadata_table",
+    -- },{
+    --     ["title"] = "标记为 /已看过",
+    --     ["id"] = "account_sync_history",
+    -- },{
+    --     ["title"] = "标记为 /已收集",
+    --     ["id"] = "account_sync_collection",
+    -- },{
+    --     ["title"] = "标记为 /稍后看",
+    --     ["id"] = "account_sync_watchlist",
+    -- },{
+    --     ["title"] = "标记为 /评分",
+    --     ["id"] = "account_sync_rating",
 }}
 
 -- 用户点击条目的右键菜单中的menus菜单后，会通过menuclick函数通知脚本
@@ -3529,7 +3693,7 @@ function menuclick(menuid, anime)
 
     if menuid == "open_webpage_media_page" then
         kiko.log("Open library page of <"..anime["name"]..">.")
-        kiko.message("打开 <"..anime["name"].."> 的TMDb/IMDb资料页", NM_HIDE)
+        kiko.message("打开 <"..anime["name"].."> 的TMDb/IMDb/Trakt资料页，\n使用TVmaze搜索", NM_HIDE)
         if not string.isEmpty(anime["url"]) then
             kiko.execute(true, "cmd", {"/c", "start", anime["url"]})
         else
@@ -3537,15 +3701,24 @@ function menuclick(menuid, anime)
         end
         if not string.isEmpty(anime_data.imdb_id) then
             kiko.execute(true, "cmd", {"/c", "start", "https://www.imdb.com/title/"..anime_data.imdb_id})
+            kiko.execute(true, "cmd", {"/c", "start", "https://trakt.tv/shows/"..anime_data.imdb_id})
         else
             kiko.message("未找到 <"..anime["name"].."> 的IMDb页面。\n请右键资料夹尝试更新详细信息。", NM_HIDE|NM_ERROR)
         end
+        if not string.isEmpty(anime_data.media_title) then
+            kiko.execute(true, "cmd", {"/c", "start", "https://www.tvmaze.com/search?q=".. string.gsub(anime_data.original_title, "[ %c%p\'\"%^%&%|<>]","+")})
+        else
+            kiko.message("未找到 <"..anime["name"].."> 的相关搜索页面。\n请右键资料夹尝试更新详细信息。", NM_HIDE|NM_ERROR)
+        end
+        Kikoplus.systemAddToPasteboard(anime_data.media_title.." "..anime_data.original_title..
+                    (string.isEmpty(anime_data.season_title) and{ "" }or{ " "..anime_data.season_title })[1],"媒体标题")
     elseif menuid == "open_webpage_media_search" then
         kiko.log("Open searching page of <"..anime["name"]..">.")
         kiko.message("在豆瓣/贴吧/B站搜索 <"..anime["name"]..">", NM_HIDE)
         if not string.isEmpty(anime_data.media_title) then
             kiko.execute(true, "cmd", {"/c", "start", "https://tieba.baidu.com/f/search/fm?ie=UTF-8^&qw=".. string.gsub(anime_data.media_title, "[ %c%p%^%&%|<>]", "%%20")})
-            kiko.execute(true, "cmd", {"/c", "start", "https://www.douban.com/search?cat=1002^&q=".. string.gsub(anime_data.media_title.." ".. (anime_data.season_title or""),
+            kiko.execute(true, "cmd", {"/c", "start", "https://www.douban.com/search?cat=1002^&q=".. string.gsub(anime_data.media_title.." "..
+                    (((anime_data.media_type=="movie" or (anime_data.season_count or anime_data.season_number)==1) and{""} or{anime_data.season_title or""})[1]),
                     "[ %c%p\'\"%^%&%|<>]","%%20")})
             kiko.execute(true, "cmd", {"/c", "start", "https://search.bilibili.com/all?keyword=".. string.gsub(anime_data.media_title.." ".. (anime_data.season_title or""),
                     "[ %c%p\'\"%^%&%|<>]","+")})
@@ -3599,7 +3772,8 @@ function menuclick(menuid, anime)
                 tmpTitleO= tmpTitleM
             end
             
-            kiko.execute(true, "cmd", {"/c", "start", "https://zmk.pw/search?q="..tmpTitleO})
+            kiko.execute(true, "cmd", {"/c", "start", "https://zmk.pw"})
+            -- kiko.execute(true, "cmd", {"/c", "start", "https://zmk.pw/search?q="..tmpTitleO})
             kiko.execute(true, "cmd", {"/c", "start", "https://subhd.tv/search/"..string.gsub(tmpTitleO,"[ %c%p%^%&%|<>]","%%20")})
             kiko.execute(true, "cmd", {"/c", "start", "https://www.yysub.net/search/index?keyword="..tmpTitleO.."^&search_type="})
             kiko.execute(true, "cmd", {"/c", "start",
@@ -3614,24 +3788,28 @@ function menuclick(menuid, anime)
     
         Kikoplus.systemAddToPasteboard(anime_data.media_title.." "..anime_data.original_title..
                 (string.isEmpty(anime_data.season_title) and{ "" }or{ " "..anime_data.season_title })[1],"媒体标题")
+    elseif menuid == "show_media_matadata_table" then
+        kiko.viewtable(anime_data)
+        kiko.viewtable(anime)
     elseif menuid == "show_media_matadata" then
         -- 显示媒体元数据
         -- kiko.log(os.time)
         -- local tipString="" -- 显示的媒体元数据文本
         -- 把媒体信息"data"的json的字符串转为<table>
         -- table.toStringLog(anime_data) -- kiko.log("")
-        local tmpString, tipString = "", ""
+        local tmpString, tipString, tipStringT, tipStringTC = "", "", "", 1
         -- 格式化输出字符串
         tmpString = anime["name"]
-        tipString = tipString .. "媒体标题：\t" .. (tmpString or "")
-        tipString = tipString .. "\n标题：\t\t" .. (anime_data.interf_title or anime_data.media_title or "")
-        tipString = tipString .. "\n原标题：\t\t" .. (anime_data["original_title"] or "")
+        -- tipString = tipString .. "媒体标题：\t" .. (tmpString or "").."\n"
+        tipString = tipString .. "标题：\t\t" .. (anime_data.interf_title or anime_data.media_title or "")
+                    ..(string.isEmpty(anime_data.original_title) and{""} or{"   |   "..anime_data.original_title})[1]
+        -- tipString = tipString .. "\n原标题：\t\t" .. (anime_data["original_title"] or "")
         if anime_data["media_type"]=="movie" then
             tipString = tipString .. "\n首映：\t\t"
         elseif anime_data["media_type"]=="tv" then
             tipString = tipString .. "\n季标题：\t\t" .. (anime_data.season_title or "")
             if anime_data.tv_is_epgroup == "true" or anime_data.tv_is_epgroup == true then
-                tipString = tipString .. "\n版标题：\t\t" .. (anime_data.epgroup_title or "")
+                tipString = tipString .. "\n版本标题：\t\t" .. (anime_data.epgroup_title or "")
                 tipString = tipString .. "\n剧集首播：\t"
             else
                 tipString = tipString .. "\n首播：\t\t"
@@ -3643,8 +3821,8 @@ function menuclick(menuid, anime)
         if not string.isEmpty(anime_data["tagline"] or anime_data.tagline_origin) then
             tipString = tipString .. "\n标语：\t\t".. (anime_data.tagline or anime_data.tagline_origin or "")
         end
-        
-        tipString = tipString .. "\n\n类型：\t\t"
+
+        tipString = tipString .. "\n类型：\t\t"
         if anime_data.media_type == "movie" or anime_data.media_type == "tv" then
             tipString = tipString .. (((Translation[settings["metadata_lang"]] or{}).media_type or{})[anime_data.media_type] or anime_data.media_type or"")
         else
@@ -3675,30 +3853,36 @@ function menuclick(menuid, anime)
         end
         tipString = tipString .. "\n流派：\t\t" .. (Array.toStringLine(anime_data["genre_names"]) or "")
         if anime_data["mo_is_adult"]==true or anime_data["mo_is_adult"]=="true" then
-            tipString = tipString .. ", 成人"
+            tipString = tipString .. (#(anime_data["genre_names"])==0 and{""}or{", "})[1].. (((Translation[settings["metadata_lang"]] or{}).media_genre or{})["Adult"] or"Adult")
         end
         local mediaLang= {anime_data["original_language"]}
         Array.extendUnique(mediaLang,anime_data["spoken_language"],"iso_639_1")
         Array.extendUnique(mediaLang,anime_data["tv_language"])
         local mediaRegion= table.deepCopy(anime_data["origin_region"]) or{}
         Array.extendUnique(mediaRegion,anime_data["production_region"],"iso_3166_1")
-        if not table.isEmpty(mediaLang) then
-            for index, value in ipairs(mediaLang) do
-                mediaLang[index]= ((Translation[settings["metadata_lang"]] or{}).language or{})[value] or value
+        if not table.isEmpty(mediaLang) or not table.isEmpty(mediaRegion) then
+            tipString = tipString .. "\n语言地区：\t"
+            if not table.isEmpty(mediaLang) then
+                for index, value in ipairs(mediaLang) do
+                    mediaLang[index]= ((Translation[settings["metadata_lang"]] or{}).language or{})[value] or value
+                end
+                tipString = tipString .. (Array.toStringLine(mediaLang) or "")
             end
-            tipString = tipString .. "\n语言：\t\t" .. (Array.toStringLine(mediaLang) or "")
+            if not table.isEmpty(mediaLang) and not table.isEmpty(mediaRegion) then
+                tipString = tipString .. "  |  "
+            end
+            if not table.isEmpty(mediaRegion) then
+                for index, value in ipairs(mediaRegion) do
+                    mediaRegion[index]= ((Translation[settings["metadata_lang"]] or{}).region or{})[value] or value
+                end
+                tipString = tipString .. (Array.toStringLine(mediaRegion) or "")
+            end
         end
         mediaLang= {}
-        if not table.isEmpty(mediaRegion) then
-            for index, value in ipairs(mediaRegion) do
-                mediaRegion[index]= ((Translation[settings["metadata_lang"]] or{}).region or{})[value] or value
-            end
-            tipString = tipString .. "\n地区：\t\t" .. (Array.toStringLine(mediaRegion) or "")
-        end
         mediaRegion= {}
         tmpString = anime["epcount"]
         if anime_data["media_type"]~="movie" then
-            tipString = tipString .. "\n本季季序/集数：\t" .. string.format("%-5s",tmpString or tostring(math.floor(tonumber(anime_data["season_number"]))) or "")
+            tipString = tipString .. "\n本季季序号/集数：\t" .. string.format("%-5s",tmpString or tostring(math.floor(tonumber(anime_data["season_number"]))) or "")
                     .."/    ".. (tmpString or tostring(math.floor(tonumber(anime_data["episode_count"]))) or "")
             if anime_data.tv_is_epgroup == "true" or anime_data.tv_is_epgroup == true then
                 tipString = tipString .. "\n版本总季数/集数：\t" .. string.format("%-5s",tmpString or tostring(math.floor(tonumber(anime_data["season_count_eg"]))) or "")
@@ -3707,29 +3891,19 @@ function menuclick(menuid, anime)
             tipString = tipString .. "\n剧集总季数/集数：\t" .. string.format("%-5s",tmpString or tostring(math.floor(tonumber(anime_data["season_count"]))) or "")
                     .."/    ".. (tmpString or tostring(math.floor(tonumber(anime_data["episode_total"]))) or "")
         end
-        if not string.isEmpty(anime_data["runtime"]) then
+        if not string.isEmpty(anime_data["runtime"]) and anime_data["runtime"]~=0.0 then
             tipString = tipString .. "\n时长：\t\t" .. anime_data["runtime"][1]
         end
-        if not string.isEmpty(anime_data["vote_average"]) then
+        if not string.isEmpty(anime_data["vote_average"]) and anime_data["vote_average"]~=0.0 then
             tipString = tipString .. "\nTMDb评分：\t" .. (anime_data["vote_average"] or "")
         end
-        if not string.isEmpty(anime_data["mo_budget"]) then
+        if not string.isEmpty(anime_data["mo_budget"]) and anime_data["mo_budget"]~=0.0 then
             tipString = tipString .. "\n预算：\t\t" .. anime_data["mo_budget"]
         end
-        if not string.isEmpty(anime_data["mo_revenue"]) then
+        if not string.isEmpty(anime_data["mo_revenue"]) and anime_data["mo_revenue"]~=0.0 then
             tipString = tipString .. "\n收入：\t\t" .. anime_data["mo_revenue"]
         end
-        if not string.isEmpty(anime_data["tv_first_air_date"]) then
-            tipString = tipString .. "\n剧集首播：\t" .. anime_data["tv_first_air_date"]
-        end
-        if not string.isEmpty(anime_data["tv_last_air_date"]) then
-            tipString = tipString .. "\n剧集最新：\t" .. anime_data["tv_last_air_date"]
-        end
-        
-        tipString = tipString .. "\n"
-        if not string.isEmpty(anime_data["homepage_path"]) then
-            tipString = tipString .. "\n媒体主页：\t" .. anime_data["homepage_path"]
-        end
+
         local mediaNetwork={}
         Array.extendUniqueFields(mediaNetwork,anime_data["tv_network"],{"name","origin_region"},true,false)
         local mediaCompany={}
@@ -3739,21 +3913,6 @@ function menuclick(menuid, anime)
         Array.extendUnique(mediaKeyword,anime_data.keyword_names,"name")
         local mediaCRating={}
         Array.extendUniqueFields(mediaCRating,anime_data.content_rating,{"rating","origin_region"},true,false)
-        if not table.isEmpty(mediaCRating) then
-            tmpString= {}
-            for _, value in ipairs(mediaCRating or {}) do
-                if (not string.isEmpty(value.rating)) then
-                    table.insert(tmpString,value.rating ..(string.isEmpty(value.origin_region) and{ "" }or
-                            { " (".. (((Translation[settings["metadata_lang"]] or{}).region or{})[value.origin_region] or value.origin_region) ..")" })[1])
-                end
-            end
-            tipString = tipString .. "\n分级：\t\t" .. (Array.toStringLine(tmpString) or "")
-        end
-        mediaCRating={}
-        if not table.isEmpty(mediaKeyword) then
-            tipString = tipString .."\n标签：\t\t".. (Array.toStringLine(mediaKeyword) or "")
-        end
-        mediaKeyword= {}
         if not table.isEmpty(mediaNetwork) then
             tmpString= {}
             for _, value in ipairs(mediaNetwork or {}) do
@@ -3764,7 +3923,28 @@ function menuclick(menuid, anime)
             end
             tipString = tipString .. "\n平台：\t\t" .. (Array.toStringLine(tmpString) or "")
         end
+
+        if not string.isEmpty(anime_data["tv_first_air_date"]) then
+            tipString = tipString .. "\n剧集首播：\t" .. anime_data["tv_first_air_date"]
+        end
+        if not string.isEmpty(anime_data["tv_last_air_date"]) then
+            tipString = tipString .. "\n剧集最新：\t" .. anime_data["tv_last_air_date"]
+        end
+        if not table.isEmpty(anime_data.update_info) then
+            tipString = tipString .. "\n本地数据更新：\t" ..
+                    (string.isEmpty(anime_data.update_info.timestamp) and{""} or{os.date("%Y-%m-%d %H:%M:%S",anime_data.update_info.timestamp)})[1]
+                    ..(string.isEmpty(anime_data.update_info.version) and{""} or{" | v".. anime_data.update_info.version})[1]
+                    -- ..(string.isEmpty(anime_data.update_info.level_detail) and{""} or{" | ".. anime_data.update_info.level_detail})[1]
+        end
+
         mediaNetwork={}
+        tipStringT= tipStringT.. string.sub(tipString,tipStringTC)
+        -- tipStringTC= string.len(tipString)+1
+        tipString = "\n" .. tipString
+        if not table.isEmpty(mediaKeyword) then
+            tipString = "标签：\t\t".. (Array.toStringLine(mediaKeyword) or "") .."\n"..tipString
+        end
+        mediaKeyword= {}
         if not table.isEmpty(mediaCompany) then
             tmpString= {}
             for _, value in ipairs(mediaCompany or {}) do
@@ -3773,10 +3953,24 @@ function menuclick(menuid, anime)
                             { " (".. (((Translation[settings["metadata_lang"]] or{}).region or{})[value.origin_region] or value.origin_region) ..")" })[1])
                 end
             end
-            tipString = tipString .. "\n公司：\t\t" .. (Array.toStringLine(tmpString) or "")
+            tipString = "公司：\t\t" .. (Array.toStringLine(tmpString) or "") .."\n"..tipString
         end
         mediaCompany= {}
-        
+        if not table.isEmpty(mediaCRating) then
+            tmpString= {}
+            for _, value in ipairs(mediaCRating or {}) do
+                if (not string.isEmpty(value.rating)) then
+                    table.insert(tmpString,value.rating ..(string.isEmpty(value.origin_region) and{ "" }or
+                            { " (".. (((Translation[settings["metadata_lang"]] or{}).region or{})[value.origin_region] or value.origin_region) ..")" })[1])
+                end
+            end
+            tipString = "分级：\t\t" .. (Array.toStringLine(tmpString) or "") .."\n"..tipString
+        end
+        mediaCRating={}
+        if not string.isEmpty(anime_data["homepage_path"]) then
+            tipString = "媒体主页：\t" .. anime_data["homepage_path"] .."\n"..tipString
+        end
+
         tipString = tipString .. "\n"
         tipString = tipString .. (string.isEmpty(anime_data.overview_season or anime_data.overview_season_origin) and{""}or
                 { "\n本季介绍：\t" .. (anime_data.overview_season or anime_data.overview_season_origin or "") })[1]
@@ -3875,6 +4069,7 @@ function menuclick(menuid, anime)
             end
         end
         
+        tipString = tipString .. "\n\n> 此区域的所有编辑 都不可保存哦~"
         local dataString = ""
         if anime_data == nil then
             -- 无媒体信息
@@ -3969,11 +4164,11 @@ function menuclick(menuid, anime)
         if not table.isEmpty(tmpImgPath) then
             local header = {["Accept"] = "image/"..tmpImgPath.header_suffix}
             local err, reply = kiko.httpget(tmpImgPath.path, {} , header)
-            if err ~= nil then
-                kiko.log("[ERROR] TMDb.API.reply-showmnfo.httpget: " .. err)
+            if err ~= nil or (reply or{}).hasError then
+                kiko.log("[ERROR] TMDb.API.reply-showmnfo.httpget: " .. err..
+                        (((reply or{}).hasError) and{" <"..math.floor((reply or{}).statusCode).."> "..(reply or{}).errInfo} or{""})[1])
                 err, reply = kiko.httpget(tmpImgPath.path_preview, {} , header)
                 if err ~= nil then
-                    kiko.log("[ERROR] TMDb.API.reply-showmnfo.httpget: " .. err)
                     goto jumpover_metadatadisplay_img_scraping
                 end
             end
@@ -3987,9 +4182,12 @@ function menuclick(menuid, anime)
         img_back_data = rf:read(len)
         ]]--
         ::jumpover_metadatadisplay_img_scraping::
+        -- local rand_symbol= ""
+        -- local rand_num= os.time() % string.len(rand_symbol)
         local resTF, resText = kiko.dialog({
             ["title"] = anime["name"] .. " - 元数据", -- 对话框标题，可选
-            ["tip"] = "> 此处的编辑不可保存哦~", -- 对话框提示信息
+            -- ["tip"] = "> 此处的编辑不可保存哦~\t", -- 对话框提示信息
+            ["tip"] = tipStringT,
             ["text"] = tipString, -- 可选，存在这个字段将在对话框显示一个可供输入的文本框，并设置text为初始值
             ["image"]=img_back_data,   --可选，内容为图片数据，存在这个字段将在对话框内显示图片
         })
@@ -4002,9 +4200,171 @@ end
 -- 对修改设置项`settings`响应。KikoPlay当 设置中修改了脚本设置项 时，会尝试调用`setoption`函数通知脚本。
 -- key为设置项的key，val为修改后的value
 function setoption(key, val)
-
     -- 显示设置更改信息
     kiko.log(string.format("[INFO]  Settings changed: %s = %s", key, val))
+
+    if key=="api_key" then
+        local query = { ["api_key"] = val, ["language"]="zh-CN", }
+        local header = { ["Accept"] = "application/json", }
+        local hg_theme= "tv/67070" -- Flebag (2016)
+        local err,reply
+        err, reply = kiko.httpget("https://api.themoviedb.org/3/".. hg_theme, query, header)
+        if err ~= nil or (reply or{}).hasError then
+            kiko.log("[ERROR] TMDb.API.reply-test.httpget: ".. err)
+            if tostring(err) == ("Host requires authentication") then
+                kiko.dialog({
+                    ["title"]="测试 TMDb 的API是否有效连接",
+                    ["tip"]="[错误]\t请在脚本设置中填写正确的 `TMDb的API密钥`！",
+                    ["text"]="+ TMDb 获取API - https://www.themoviedb.org/settings/api",
+                })
+                kiko.execute(true, "cmd", {"/c", "start", "https://www.themoviedb.org/settings/api"})
+            else
+                kiko.dialog({
+                    ["title"]="测试 TMDb 的API是否有效连接",
+                    ["tip"]="[错误]\t"..err..(((reply or{}).hasError) and{" <"..math.floor((reply or{}).statusCode).."> "..(reply or{}).errInfo} or{""})[1].."！",
+                    ["text"]="+ TMDb 获取API - https://www.themoviedb.org/settings/api",
+                })
+            end
+            -- error(err)
+        else
+            kiko.dialog({
+                ["title"]="测试 TMDb 的API是否有效连接",
+                ["tip"]="\t成功设置 `API - TMDb的API密钥` ！",
+            })
+        end
+    end
+    if key=="api_key_fanart" then
+        local query = { ["api_key"] = val }
+        local header = { ["Accept"] = "application/json" }
+        local hg_theme= "tv/314614" -- Flebag (2016)
+        local err,reply
+        err, reply = kiko.httpget("http://webservice.fanart.tv/v3/".. hg_theme, query, header)
+        if err ~= nil or (reply or{}).hasError then
+            kiko.log("[ERROR] fanart.API.reply-test.httpget: " .. err)
+            if tostring(err) == ("Host requires authentication") then
+                kiko.dialog({
+                    ["title"]="测试 fanart 的API是否有效连接",
+                    ["tip"]="[错误]\t请在脚本设置中填写正确的 `fanart的API密钥`！\n"..
+                        "\t\t或把设置项`元数据 - 图片主要来源`改为`TMDb_only`以取消从fanart刮削。",
+                    ["text"]="+ fanart 获取API - https://fanart.tv/get-an-api-key/",
+                })
+                kiko.execute(true, "cmd", {"/c", "start", "https://fanart.tv/get-an-api-key/"})
+            else
+                kiko.dialog({
+                    ["title"]="测试 fanart 的API是否有效连接",
+                    ["tip"]="[错误]\t"..err..(((reply or{}).hasError) and{" <"..math.floor((reply or{}).statusCode).."> "..(reply or{}).errInfo} or{""})[1].."！",
+                    ["text"]="+ fanart 获取API - https://fanart.tv/get-an-api-key/",
+                })
+            end
+            -- error(err)
+        else
+            kiko.dialog({
+                ["title"]="测试 fanart 的API是否有效连接",
+                ["tip"]="\t成功设置 `API - fanart的API密钥` ！",
+            })
+        end
+    end
+    if key=="metadata_image_priority" and val=="fanart_prior" then
+        kiko.dialog({
+            ["title"]="更改了 `元数据 - 图片主要来源`",
+            ["tip"]="此功能建议fanart的API有效连接，\n请点击`设置`->`脚本`->右键`TMDb`->测试连接。",
+            ["text"]=nil,
+        })
+    end
+    if key=="metadata_show_imgtype" and (val=="thumb"
+            or val=="banner" or val=="logo" or val=="art" or val=="otherart") then
+        kiko.dialog({
+            ["title"]="更改了 `元数据 - 显示的图片种类`",
+            ["tip"]="此功能需要fanart的API有效连接，\n请点击`设置`->`脚本`->右键`TMDb`->测试连接。",
+            ["text"]=nil,
+        })
+    end
+end
+
+function scriptmenuclick(menuid)
+    kiko.log(string.format("[INFO]  Script menu click: %s", menuid))
+    if menuid == "detect_valid_api" then
+        local diaTitle, diaTip, diaText = "测试 API 是否有效连接","",""
+        local query = { ["api_key"] = settings.api_key, ["language"]="zh-CN", }
+        local header = { ["Accept"] = "application/json", }
+        local hg_theme= "tv/67070" -- Flebag (2016)
+        local err,reply
+        err, reply = kiko.httpget("https://api.themoviedb.org/3/".. hg_theme, query, header)
+        if err ~= nil or (reply or{}).hasError then
+            kiko.log("[ERROR] TMDb.API.reply-test.httpget: ".. err)
+            if tostring(err) == ("Host requires authentication") then
+                diaTip = diaTip.. "[错误]\t请在脚本设置中填写正确的 `TMDb的API密钥`！\n"
+                diaText = diaText.. "+ TMDb 获取API - https://www.themoviedb.org/settings/api\n"
+                kiko.execute(true, "cmd", {"/c", "start", "https://www.themoviedb.org/settings/api"})
+            else
+                diaTip = diaTip.. "[错误]\t"..err..(((reply or{}).hasError) and{" <"..math.floor((reply or{}).statusCode).."> "..(reply or{}).errInfo} or{""})[1].."！\n"
+                diaText = diaText.. "+ TMDb 获取API - https://www.themoviedb.org/settings/api\n"
+            end
+            -- error(err)
+        else
+            diaTip = diaTip.. "\t成功连接 `API - TMDb的API密钥` ！\n"
+        end
+        query = { ["api_key"] = settings.api_key_fanart }
+        header = { ["Accept"] = "application/json" }
+        hg_theme= "tv/314614" -- Flebag (2016)
+        err,reply = nil,nil
+        err, reply = kiko.httpget("http://webservice.fanart.tv/v3/".. hg_theme, query, header)
+        if err ~= nil or (reply or{}).hasError then
+            kiko.log("[ERROR] fanart.API.reply-test.httpget: " .. err)
+            if tostring(err) == ("Host requires authentication") then
+                diaTip = diaTip.. "\n[错误]\t请在脚本设置中填写正确的 `fanart的API密钥`！\n"..
+                        "\t\t或把设置项`元数据 - 图片主要来源`改为`TMDb_only`以取消从fanart刮削。\n"
+                diaText = diaText.. "+ fanart 获取API - https://fanart.tv/get-an-api-key/\n"
+                kiko.execute(true, "cmd", {"/c", "start", "https://fanart.tv/get-an-api-key/"})
+            else
+                diaTip = diaTip.. "\n[错误]\t"..err..(((reply or{}).hasError) and{" <"..math.floor((reply or{}).statusCode).."> "..(reply or{}).errInfo} or{""})[1].."！\n"
+                diaText = diaText.. "+ fanart 获取API - https://fanart.tv/get-an-api-key/\n"
+            end
+            -- error(err)
+        else
+            diaTip = diaTip.. "\n\t成功连接 `API - fanart的API密钥` ！\n"
+        end
+        kiko.dialog({
+            ["title"]= diaTitle,
+            ["tip"]= diaTip,
+            ["text"]=  (string.isEmpty(diaText) and{nil} or{diaText})[1],
+        })
+    elseif menuid == "link_repo_usage" then
+        kiko.execute(true, "cmd", {"/c", "start", "https://github.com/kafovin/KikoPlayScript#%E8%84%9A%E6%9C%AC-tmdb-%E7%9A%84%E7%94%A8%E6%"})
+    elseif menuid == "display_dialog_about" then
+        local img_back_data= nil
+        -- local header = {["Accept"] = "image/jpeg" }
+        -- local err, reply = kiko.httpget("https://github.com/kafovin/KikoPlayScript/blob/library-tmdb-beta/manual.assets/image-Scraping.by.TMDb-2.1.1.png", {} , header)
+        -- if err ~= nil or (reply or{}).hasError then
+        --     img_back_data=nil
+        -- else
+        --     img_back_data=reply["content"]
+        -- end
+        kiko.dialog({
+            ["title"]= "关于  -  脚本 TMDb",
+            ["tip"]= "\t\t\t\tEdited by: kafovin\n\n"..
+                    "脚本 TMDb (/library/tmdb.lua) 是用于弹幕视频播放软件 KikoPlay 的资料脚本，\n"..
+                    "主要借助你从 The Movie Database (TMDb) 申请的API 来搜索和刮削信息。\n"..
+                    "也可设置选择刮削 fanart 的媒体图片、Jellyfin/Emby 的本地元数据、TVmaze的剧集演员。\n"..
+                    "\n欢迎到 此脚本的GitHub页面 或 KikoPlay的QQ群 反馈！\n",
+            ["text"]= "+ 此脚本的GitHub页面 - https://github.com/kafovin/KikoPlayScript\n"..
+                    "\t 用法、常见问题…\n"..
+                    "+ TMDb 申请 API - https://www.themoviedb.org/settings/api\n"..
+                    "+ fanart 申请 API - https://fanart.tv/get-an-api-key/\n"..
+                    "\n本脚本基于：\n"..
+                    "+ TMDb 首页 - https://www.themoviedb.org/\n"..
+                    "+ fanart 首页 - https://fanart.tv/\n"..
+                    "+ TVmaze 首页 - https://www.tvmaze.com/\n"..
+                    "+ Jelyfin 首页 - https://jellyfin.org/\n"..
+                    "+ Emby 首页 - https://emby.media/\n"..
+                    "+ 其他另见脚本内注释\n"..
+                    "\nKikoPlay：\n"..
+                    "+ KikoPlay 首页 - https://kikoplay.fun/\n"..
+                    "+ KikoPlay的GitHub页面 - https://github.com/KikoPlayProject/KikoPlayScript\n"..
+                    "+ KikoPlay 脚本仓库 - https://github.com/KikoPlayProject/KikoPlayScript",
+            ["image"]= img_back_data,
+        })
+    end
 end
 
 ---------------------
@@ -4226,13 +4586,14 @@ function Kikoplus.httpgetMediaId(queryMe,namespace)
     local err, replyMe = kiko.httpget(string.format(
         "http://api.themoviedb.org/3/" .. namespace), queryMe, header)
 
-    if err ~= nil then
-        kiko.log("[ERROR] TMDb.API.reply-"..namespace.."."..(queryMe.language or"").."."..(queryMe.append_to_response or"-")..".httpget: " .. err)
+    if err ~= nil or (replyMe or{}).hasError then
+        kiko.log("[ERROR] TMDb.API.reply-"..namespace.."."..(queryMe.language or"").."."..(queryMe.append_to_response or"-")..".httpget: " .. err..
+                (((replyMe or{}).hasError) and{" <"..math.floor((replyMe or{}).statusCode).."> "..(replyMe or{}).errInfo} or{""})[1])
         if tostring(err) == ("Host requires authentication") then
             kiko.message("[错误] 请在脚本设置中填写正确的 `TMDb的API密钥`！",1|8)
             kiko.execute(true, "cmd", {"/c", "start", "https://www.themoviedb.org/settings/api"})
         end
-        error(err)
+        error(err..(((replyMe or{}).hasError) and{" <"..math.floor((replyMe or{}).statusCode).."> "..(replyMe or{}).errInfo} or{""})[1])
     end
     local contentMe = replyMe["content"]
     local err, objMe = kiko.json2table(contentMe)
@@ -4253,7 +4614,7 @@ function Kikoplus.systemAddToPasteboard(str,info)
     end
     kiko.execute(true, "cmd", {"/c", "set/p=", string.gsub(str ,"([\"])", " "),"<nul|clip"})
     kiko.log("[INFO]  Add "..(info or"") .. " to pasteboard.")
-    return (kiko.message("已复制"..(string.isEmpty(info) and{ "" }or{ " "..info.." " })[1] .. "至剪切板", NM_HIDE))[1]
+    return (kiko.message("已复制"..(string.isEmpty(info) and{ "" }or{ " "..info.." " })[1] .. "至剪切板", NM_HIDE))
 end
 
 -- 特殊字符转换 "&amp;" -> "&"  "&quot;" -> "\""
