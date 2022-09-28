@@ -2,16 +2,11 @@ info = {
     ["name"] = "Bangumi",
     ["id"] = "Kikyou.l.Bangumi",
 	["desc"] = "Bangumi脚本，从bgm.tv中获取动画信息",
-	["version"] = "0.1"
+	["version"] = "0.2",
+    ["minKikoVersion"] = "0.9.1"
 }
 
 settings = {
-    ["result_type"]={
-        ["title"]="搜索结果类型",
-        ["default"]="2",
-        ["desc"]="搜索条目类型\n 1: 书籍 2： 动画 3：音乐 4：游戏 6：三次元",
-        ["choices"]="1,2,3,4,6"
-    },
     ["cover_quality"]={
         ["title"]="封面图质量",
         ["default"]="common",
@@ -30,6 +25,16 @@ settings = {
         ["desc"]="搜索标签时是否显示演员层次标签",
         ["choices"]="y,n"
     }
+}
+
+searchsettings = {
+    ["result_type"]={
+        ["title"]="搜索结果类型",
+        ["default"]="动画",
+        ["desc"]="搜索结果类型",
+        ["choices"]="书籍,动画,音乐,游戏,三次元",
+		["display_type"] = 2
+    },
 }
 
 menus = {
@@ -53,9 +58,16 @@ function setoption(key, val)
     kiko.log(string.format("Setting changed: %s = %s", key, val))
 end
 
-function search(keyword)
+function search(keyword, options)
+    local type_map = {
+        ["书籍"] = 1,
+        ["动画"] = 2,
+        ["音乐"] = 3,
+        ["游戏"] = 4,
+        ["三次元"] = 6,
+    }
     local query = {
-        ["type"]=settings["result_type"],
+        ["type"]=type_map[options["result_type"]],
         ["responseGroup"]="small",
         ["start"]="0",
         ["max_results"]="10"

@@ -2,7 +2,7 @@ info = {
     ["name"] = "动画疯",
     ["id"] = "Kikyou.d.Gamer",
 	["desc"] = "巴哈姆特动画疯弹幕脚本",
-	["version"] = "0.1.1"
+	["version"] = "0.1.2"
 }
 
 supportedURLsRe = {
@@ -13,12 +13,31 @@ sampleSupporedURLs = {
     "https://ani.gamer.com.tw/animeVideo.php?sn=9285"
 }
 
+settings = {
+    ["user_agent"]={
+        ["title"]="UA",
+        ["desc"]="User Agent",
+    },
+    ["cookie"]={
+        ["title"]="Cookie",
+        ["desc"]="Cookie",
+    },
+}
+
+
 function search(keyword)
     local _, tradKw = kiko.sttrans(keyword, false)
     local query = {
         ["kw"]=tradKw
     }
-    local err, reply = kiko.httpget("https://ani.gamer.com.tw/search.php", query)
+    local headers = {}
+    if #settings["user_agent"] > 0 and #settings["cookie"] > 0 then
+        headers = {
+            ["User-Agent"] = settings["user_agent"],
+            ["Cookie"] = settings["cookie"],
+        }
+    end
+    local err, reply = kiko.httpget("https://ani.gamer.com.tw/search.php", query, headers)
     if err ~= nil then error(err) end
     local content = reply["content"]
     local _, _, searchContent = string.find(content, "<div class=\"animate%-theme%-list\">(.+)<div class=\"animate%-theme%-list animate%-wish\">")
@@ -68,7 +87,14 @@ function epinfo(source)
     local query = {
         ["sn"]=source_obj["sn"]
     }
-    local err, reply = kiko.httpget(baseUrl, query)
+    local headers = {}
+    if #settings["user_agent"] > 0 and #settings["cookie"] > 0 then
+        headers = {
+            ["User-Agent"] = settings["user_agent"],
+            ["Cookie"] = settings["cookie"],
+        }
+    end
+    local err, reply = kiko.httpget(baseUrl, query, headers)
     if err ~= nil then error(err) end
     local content = reply["content"]
     local _, _, epContent = string.find(content, "<section class=\"season\">(.-)</section>")
@@ -137,10 +163,17 @@ end
 function danmu(source)
     local err, source_obj = kiko.json2table(source["data"])
     if err ~= nil then error(err) end
-
+    local headers = {}
+    if #settings["user_agent"] > 0 and #settings["cookie"] > 0 then
+        headers = {
+            ["User-Agent"] = settings["user_agent"],
+            ["Cookie"] = settings["cookie"],
+        }
+    end
     local danmuUrl = "https://ani.gamer.com.tw/ajax/danmuGet.php"
     local postdata = string.format("sn=%s", source_obj["sn"])
-    local err, reply = kiko.httppost(danmuUrl, postdata)
+    headers["Content-Length"] = tostring(#postdata)
+    local err, reply = kiko.httppost(danmuUrl, postdata, headers)
     if err ~= nil then error(err) end
     local danmuContent = reply["content"]
     local err, array = kiko.json2table(danmuContent)

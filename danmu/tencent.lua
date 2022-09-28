@@ -2,7 +2,7 @@ info = {
     ["name"] = "腾讯视频",
     ["id"] = "Kikyou.d.Tencent",
 	["desc"] = "腾讯视频弹幕脚本",
-	["version"] = "0.2"
+	["version"] = "0.3"
 }
 
 supportedURLsRe = {
@@ -42,6 +42,16 @@ function string.startsWith(str, substr)
     else  
         return true  
     end  
+end
+
+function string.lastIndexOf(str, substr)
+    local i, j
+    local k = 0
+    repeat
+        i = j
+        j, k = string.find(str, substr, k + 1, true)
+    until j == nil
+    return i
 end
 
 function str2time(time_str)
@@ -141,7 +151,7 @@ end
 function decodeDanmu(content, danmuList)
     local err, dmObj = kiko.json2table(content)
     if err ~= nil then return danmuList end
-    local dmArray = dmObj["comments"]
+    local dmArray = dmObj["barrage_list"]
     if dmArray == nil then return danmuList end
     for _, dm in ipairs(dmArray) do
         local text = dm["content"]
@@ -154,9 +164,9 @@ function decodeDanmu(content, danmuList)
         if err==nil then
             local pos = tonumber(pobj["position"])
             if pos~=nil then
-                if pos==5 then  --top
+                if pos==2 then  --top
                     dmType = 1
-                elseif pos==6 then  --bottom
+                elseif pos==3 then  --bottom
                     dmType = 2
                 end
             end
@@ -175,28 +185,32 @@ function decodeDanmu(content, danmuList)
         end
         table.insert(danmuList, {
             ["text"]=text,
-            ["time"]=tonumber(dm["timepoint"])*1000,
+            ["time"]=tonumber(dm["time_offset"]),
             ["color"]=color,
             ["type"]=dmType,
-            ["sender"]="[Tencent]" .. dm["opername"]
+            ["date"]=dm["create_time"],
+            ["sender"]="[Tencent]" .. dm["nick"]
         })
     end
     return danmuList
 end
 
-function downloadDanmu(id, pieces)
-    local baseUrl = "https://mfm.video.qq.com/danmu"
-    local urls, querys = {}, {}
-    for i=0,pieces do
-        table.insert(urls, baseUrl)
-        table.insert(querys, {
-            ["otype"]="json", 
-            ["target_id"]=id, 
-            ["timestamp"]=string.format("%d", i*30)
-        })
+function downloadDanmu(id)
+    local baseUrl = string.format("https://dm.video.qq.com/barrage/base/%s", id)
+    local err, reply = kiko.httpget(baseUrl)
+    if err ~= nil then error(err) end
+    local err, obj = kiko.json2table(reply["content"]) 
+    if err ~= nil then 
+        kiko.log(reply["content"])
+        error(err)
+    end
+    local prefix = string.format("https://dm.video.qq.com/barrage/segment/%s/", id)
+    local urls = {}
+    for k, v in pairs(obj["segment_index"]) do
+        table.insert(urls, prefix .. v["segment_name"])
     end
     local danmuList = {}
-    local _, rets = kiko.httpgetbatch(urls, querys)
+    local _, rets = kiko.httpgetbatch(urls)
     for _, v in ipairs(rets) do
         if not v["hasError"] then
             danmuList = decodeDanmu(v["content"], danmuList)
@@ -209,48 +223,11 @@ function danmu(source)
     local err, source_obj = kiko.json2table(source["data"])
     if err ~= nil then error(err) end
 
-    if source_obj["targetid"] ~= nil then
-        return nil, downloadDanmu(source_obj["targetid"], source_obj["pieces"])
-    end
     local url = source_obj["url"]
     if url == nil then return nil, {} end
-    local err, reply = kiko.httpget(url)
-    if err ~= nil then error(err) end
-    local content = reply["content"]
-
-    local _, _, infoContent = string.find(content, "VIDEO_INFO = (.-)\n")
-    if infoContent == nil then error("解析信息失败") end
-    local err, obj = kiko.json2table(infoContent) 
-    if err ~= nil then 
-        kiko.log(playInfo)
-        error(err)
-    end
-    source["title"] = obj["title"]
-    source["duration"] = obj["duration"]
-    source_obj["vid"] = obj["vid"]
-    source_obj["pieces"] = math.ceil(source["duration"] / 30)
-
-    local post_data_table = {
-        ["wRegistType"] = 2,
-        ["vecIdList"] = {
-            source_obj["vid"]
-        }
-    }
-    local _, post_data = kiko.table2json(post_data_table)
-    local target_id_api = "https://access.video.qq.com/danmu_manage/regist?vappid=97767206&vsecret=c0bdcbae120669fff425d0ef853674614aa659c605a613a4&raw=1"
-    local header = { ["Content-Type"]="application/json" }
-    local err, reply = kiko.httppost(target_id_api, post_data, header)
-    if err ~= nil then error(err) end
-    local err, target_reply = kiko.json2table(reply["content"])
-    if err ~= nil then error(err) end
-    local target_id_info = target_reply["data"]["stMap"][source_obj["vid"]]["strDanMuKey"]
-    for _, v in ipairs(string.split(target_id_info, "&")) do
-        if string.startsWith(v, "targetid=") then
-            source_obj["targetid"] = string.sub(v, string.len("targetid=")+1)
-            break
-        end
-    end
-    local _, data_str = kiko.table2json(source_obj)
-    source["data"] = data_str
-    return source, downloadDanmu(source_obj["targetid"], source_obj["pieces"])
+    local s, e = string.lastIndexOf(url, '/'), string.lastIndexOf(url, '.')
+    if s == nil or e == nil then error("vid not found") end
+    local vid = string.sub(url, s + 1, e - 1)
+    if vid == nil or #vid == 0 then error("vid not found") end
+    return source, downloadDanmu(vid)
 end

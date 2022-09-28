@@ -2,7 +2,7 @@ info = {
     ["name"] = "爱奇艺",
     ["id"] = "Kikyou.d.Iqiyi",
 	["desc"] = "爱奇艺弹幕脚本",
-	["version"] = "0.1"
+	["version"] = "0.1.1"
 }
 
 supportedURLsRe = {
@@ -42,6 +42,10 @@ function string.startsWith(str, substr)
     else  
         return true  
     end  
+end
+
+function string.endsWith(str, substr)  
+    return substr == '' or string.sub(str,-#substr)==substr
 end
 
 function str2time(time_str)
@@ -273,7 +277,10 @@ function danmu(source)
         kiko.log(playInfo)
         error(err)
     end
-    source["title"] = obj["tvName"]
+    source["title"] = obj["name"]
+    if obj["subtitle"] ~= nil and not string.endsWith(source["title"], obj["subtitle"]) then
+        source["title"] = string.format("%s %s", obj["name"], obj["subtitle"])
+    end
     source["duration"] = str2time(obj["duration"])
     source_obj["vid"] = string.format("%d", obj["tvId"])
     source_obj["pieces"] = math.ceil(source["duration"] / 300 + 1)
