@@ -3,7 +3,7 @@ info = {
     ["id"] = "Kikyou.l.Bangumi",
 	["desc"] = "Bangumi脚本，从bgm.tv中获取动画信息",
 	["version"] = "0.2",
-    ["minKikoVersion"] = "0.9.1"
+    ["min_kiko"] = "0.9.1"
 }
 
 settings = {

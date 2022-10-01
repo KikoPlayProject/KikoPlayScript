@@ -15,7 +15,9 @@ KikoPlay支持Lua脚本，有三种类型：
 如果有问题，创建issue或者联系我:
 dx_8820832#yeah.net（#→@），或者到QQ群874761809反馈
 
-## 新脚本
+## 其他开发者提供的脚本
 
- - [TMDb](library/tmdb.lua) 从[themoviedb.org](themoviedb.org)获取信息，具体用法参考[这里](https://github.com/kafovin/KikoPlayScript)
- - [TVmazeList](bgm_calendar/tvmazelist.lua) 从 tvmaze.com 刮削剧集的日历时间表，具体用法参考[这里](https://github.com/kafovin/KikoPlayScript)
+ - [TMDb](library/tmdb.lua)：by kafovin,  从[themoviedb.org](themoviedb.org)获取信息，具体用法参考[这里](https://github.com/kafovin/KikoPlayScript)
+ - [TVmazeList](bgm_calendar/tvmazelist.lua)：by kafovin,  从 tvmaze.com 刮削剧集的日历时间表，具体用法参考[这里](https://github.com/kafovin/KikoPlayScript)
+ - [TraktList](bgm_calendar/traktlist.lua)：by kafovin, 从 trakt.tv 刮削媒体的日历时间表
+ - [TPBsrc](resource\tpbsource.lua)： TPBsource 资源脚本

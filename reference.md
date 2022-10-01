@@ -1,5 +1,5 @@
 # <img src="kikoplay.png" width=24 /> KikoPlay 脚本开发参考 
-2022.05 By Kikyou，本文档适用于KikoPlay 0.9.0及以上版本
+2022.10 By Kikyou，本文档适用于KikoPlay 0.9.1及以上版本
 
 ## 目录
  - [脚本类型](#脚本类型)
@@ -38,8 +38,9 @@ KikoPlay中有4类脚本：
 info = {
   ["name"] = "Bilibili",          --脚本名称
   ["id"] = "Kikyou.d.Bilibili",   --脚本id，不应和其他脚本的id相同
-	["desc"] = "Bilibili弹幕脚本",   --描述信息
-	["version"] = "0.1"             --版本信息
+  ["desc"] = "Bilibili弹幕脚本",   --描述信息
+  ["version"] = "0.1",            --版本信息
+  ["min_kiko"] = "0.9.1",         --可选，0.9,1起新增，最低要求的KikoPlay版本
 }
 ```
 脚本可以包含设置项，这些项目可以通过KikoPlay “设置”对话框-“脚本”页面-脚本列表的右键菜单-“设置” 进行设置
@@ -50,7 +51,8 @@ settings = {
         ["title"]="搜索结果类型", --设置项标题
         ["default"]="2",         --默认值，类型均为字符串
         ["desc"]="条目类型， 2： 动画  3：三次元",  --描述信息
-        ["choices"]="2,3"        --可选，如果包含这一项，用户只能从choices中进行选择，多个项目用逗号“,”分隔
+        ["choices"]="2,3",       --可选，如果包含这一项，用户只能从choices中进行选择，多个项目用逗号“,”分隔
+        ["group"]="xxx"          --可选，0.9.1新增，设置group后KikoPlay会在设置页中聚合相同group的选项
     }
 }
 ```
@@ -85,11 +87,36 @@ function scriptmenuclick(menuid)
     end
 end
 ```
+0.9.1起新增了搜索设置功能，方便用户在搜索时快速设置某些选项，格式如下：
+```lua
+searchsettings = {
+    ["result_type"]={
+        ["title"]="搜索结果类型",    --标题
+        ["default"]="动画",         --可选，默认值
+        ["desc"]="搜索结果类型",     --描述信息
+        ["choices"]="书籍,动画,音乐,游戏,三次元",  --可选，选项
+        ["save"]=true,             --可选，是否保存值，bool类型，默认为true，下次搜索时会保存上次的值
+        ["display_type"] = 2       --展示类型，整数，默认为0（文本）
+    },
+}
+```
+`display_type`的取值如下： 
+```
+Text      = 0    文本框
+Combo     = 1    下拉列表
+Radio     = 2    单选列表
+Check     = 3    单选框，如果display_type设为单选框，这个设置项的值只会传递为"0"/"1"
+CheckList = 4    多选列表，如果用户选了多个值，会用','拼接传递到脚本
+Label     = 5    仅展示标题
+```
+`searchsettings`的值会在搜索函数中传递到脚本
 ### 弹幕脚本
 弹幕脚本需要包含如下函数/table：
- - `function search(keyword)`
+ - `function search(keyword, <options>)`
 
    > `keyword`： string，搜索关键字
+   > 
+   > `options`：table，如果脚本中包含`searchsettings`，可以通过`options["xxx"]`获取设置项的值；否则不会传递这个参数
    >
    > 返回：Array[[DanmuSource](#danmusource)]
    
@@ -162,10 +189,12 @@ end
 资料脚本需要至少提供`match`或者同时提供`search`和`getep`函数。
 
 尽管下文使用“动画”一词，但视频类型并不局限于动画。
- - `function search(keyword)`
+ - `function search(keyword, <options>)`
 
-   `keyword`： string，搜索关键字
-
+    > `keyword`： string，搜索关键字
+    > 
+    > `options`：table，如果脚本中包含`searchsettings`，可以通过`options["xxx"]`获取设置项的值；否则不会传递这个参数
+    >
     > 返回：Array[[AnimeLite](#animelite)]
     > 
     > 完成搜索功能，可选
@@ -221,14 +250,19 @@ end
 ### 资源脚本
 资源脚本提供资源搜索功能（主要是bt类资源）
 
- - `function search(keyword,page)`
+ - `function search(keyword, page, scene, <options>)`
 
    > `keyword`： string，搜索关键字
    > 
    > `page`： 页码
+   >
+   > `scene`： 搜索场景，目前有两个："search"和"auto-download"，后者表示在自动下载功能中KikoPlay调用脚本进行搜索
+   >
+   > `options`：table，如果脚本中包含`searchsettings`，可以通过`options["xxx"]`获取设置项的值；否则不会传递这个参数
+   >
+   > 返回： Array[[ResourceItem](#resourceitem)] 
 
-    返回： Array[[ResourceItem](#resourceitem)] 
-
+    当`scene=="auto-download"`时，脚本不应在搜索中使用dialog等函数阻塞脚本，等待用户输入
  - `function getdetail(item)`
 
    > `item`： [ResourceItem](#resourceitem)
