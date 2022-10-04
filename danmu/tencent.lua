@@ -141,8 +141,15 @@ function urlinfo(url)
     local results = {}
     local data = { ["url"] = url }
     local _, data_str = kiko.table2json(data)
+
+    local err, reply = kiko.httpget(url)
+    if err ~= nil then error(err) end
+    local content = reply["content"]
+    local _, _, title = string.find(content, "<title>(.*)</title>")
+    if title == nil then title = "unknown" end
+
     table.insert(results, {
-        ["title"] = "unknown",
+        ["title"] = title,
         ["data"] = data_str
     })
     return results
