@@ -412,11 +412,11 @@ KikoPlay提供的API位于kiko表中，通过kiko.xxx调用
 
  - `log(...)`
 
-   打印输出到KikoPlay的“脚本日志”对话框中。支持多个参数，如果只有一个参数且类型为Tabel，会以json的形式将整个Tabel的内容输出(注意，Table不能包含循环引用)
+   打印输出到KikoPlay的“脚本日志”对话框中。支持多个参数，如果只有一个参数且类型为Table，会以json的形式将整个Table的内容输出(注意，Table不能包含循环引用)
 
  - `viewtable(table)`
 
-   0.9.0新增，可视化Tabel的全部内容，便于进行调试
+   0.9.0新增，可视化Table的全部内容，便于进行调试
 
  - `message(msg, flags)`
 
@@ -597,7 +597,7 @@ KikoPlay提供的API位于kiko表中，通过kiko.xxx调用
 
     reg:setpattern("(\\w)(\\w)(\\w)\\s(.+)")
     local x = reg:gsub("abc abc", {a="Ki", b="ko", c="Play", abc="0.9.0"})
-    print("tabel gsub: ", x)  -- tabel gsub: 	KikoPlay 0.9.0
+    print("table gsub: ", x)  -- table gsub: 	KikoPlay 0.9.0
 
     local s = "hello world from Lua"
     reg:setpattern("\\w+")

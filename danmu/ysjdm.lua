@@ -2,7 +2,7 @@ info = {
     ["name"] = "异世界动漫",
     ["id"] = "Kikyou.d.ysjdm",
 	["desc"] = "异世界动漫弹幕脚本，www.ysjdm.net",
-	["version"] = "0.1"
+	["version"] = "0.2"
 }
 
 supportedURLsRe = {
@@ -93,7 +93,7 @@ function urlinfo(url)
     if matched == "ep" then 
         local data = { ["ep"] = url }
         local _, data_str = kiko.table2json(data)
-        return {{["data"] = data_str}}
+        return {{["data"] = data_str, ["title"] = "unknown"}}
     elseif matched == "collection" then
         local data = { ["collection"] = url }
         local _, data_str = kiko.table2json(data)
@@ -102,8 +102,8 @@ function urlinfo(url)
 end
 
 function downloadDanmu(id)
-    local dm_url= "https://bf2.sbdm.cc/barrage/api"
-    local err, reply = kiko.httpget(dm_url, {["ac"]="dm", ["id"]=id})
+    local dm_url= "https://bf.sbdm.cc/dmku/"
+    local err, reply = kiko.httpget(dm_url, {["ac"]="get", ["id"]=id})
     if err ~= nil then error(err) end
     local err, obj = kiko.json2table(reply["content"]) 
     if err ~= nil then error(err) end
@@ -147,7 +147,7 @@ function danmu(source)
     local err, reply = kiko.httpget(ep_url)
     if err ~= nil then error(err) end
     local content = reply["content"]
-    if source["title"] == nil then
+    if source["title"] == "unknown" then
         local _, _, title = string.find(content, "<title>(.*)</title>")
     if title ~= nil then source["title"] = title end
     end
@@ -158,7 +158,7 @@ function danmu(source)
     local video_url = player_info_obj["url"]
     if video_url == nil then error("视频信息解析失败: video_url") end
 
-    local err, reply = kiko.httpget("https://bf.sbdm.cc/m3u8.php", {["url"]=video_url})
+    local err, reply = kiko.httpget("https://bf.sbdm.cc/m3u8.php", {["url"]=video_url}, {["Referer"]="http://ysjdm.net/"})
     if err ~= nil then error(err) end
     local content = reply["content"]
     local _, _, dm_id = string.find(content, "\"id\"%s*:%s*\"(.-)\",")
