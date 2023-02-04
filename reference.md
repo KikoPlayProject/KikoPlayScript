@@ -1,5 +1,5 @@
 # <img src="kikoplay.png" width=24 /> KikoPlay 脚本开发参考 
-2022.10 By Kikyou，本文档适用于KikoPlay 0.9.1及以上版本
+2023.02 By Kikyou，本文档适用于KikoPlay 0.9.2及以上版本
 
 ## 目录
  - [脚本类型](#脚本类型)
@@ -62,7 +62,7 @@ settings = {
     ["result_type"] = "2" 
 }
 ```
-因此在脚本中，可以直接通过`settings["xxxx"]`获取设置项的值
+因此在脚本中，可以直接通过`settings["xxxx"]`获取设置项的值，如果需要在脚本中修改设置项的值并保存，可以使用KikoPlay提供的`writesetting`函数
 
 注意，设置项值的类型都是字符串。如果用户在脚本加载后，从KikoPlay的设置对话框中修改了脚本设置项，KikoPlay会尝试调用脚本的`setoption`函数通知脚本，如果需要对修改进行响应，可以在脚本中添加这个函数：
 ```lua
@@ -321,13 +321,15 @@ KikoPlay提供的API位于kiko表中，通过kiko.xxx调用
 
    和`httpget`类似，但可以一次性发出一组HTTP Get请求，需要确保`urls`、`querys`和`headers`中的元素一一对应，querys和headers也可以为空
 
- - `httppost(url, data, header)`
+ - `httppost(url, data, header, querys)`
 
    > `url`：string
    >
    > `data`：string, POST数据
    >
    > `header`: HTTP Header, `{[key]=value,...}`，可选，默认为空
+   >
+   > `querys`：查询，`Array[{[key]=value,...}]`，可选，默认为空
    >
    > 返回：string/nil, [NetworkReply](#networkreply)
 
@@ -342,9 +344,11 @@ KikoPlay提供的API位于kiko表中，通过kiko.xxx调用
    将json字符串解析为lua的Table
    返回的第一个值表示是否发生错误，没有错误时为nil，否则是错误信息
 
- - `table2json(table)`
+ - `table2json(table, compact)`
 
    > `table`：Table, 待转换为json的table
+   >
+   > `compact`: string, 可选，表示输出紧凑还是格式化的json，默认为格式化的json，传入"compact"则输出紧凑的json
    >
    > 返回：string/nil, string
 
@@ -408,11 +412,22 @@ KikoPlay提供的API位于kiko表中，通过kiko.xxx调用
    > `type`：string, 可选from/to, from：base64解码，to: base64编码，默认为from
    >
    > 返回：string/nil, string
+
    0.9.0新增，base64转换函数，第一个返回值表示是否出错，第二个返回值为base64编码/解码结果
 
  - `log(...)`
 
    打印输出到KikoPlay的“脚本日志”对话框中。支持多个参数，如果只有一个参数且类型为Table，会以json的形式将整个Table的内容输出(注意，Table不能包含循环引用)
+ 
+ - `writesetting(key, value)`
+
+   > `key`：string，设置项的key
+   >
+   > `value`：string, 设置项的值
+   >
+   > 返回：string/nil, nil
+   
+   修改设置项的值，改动会被保存。第一个返回值表示是否出错
 
  - `viewtable(table)`
 
