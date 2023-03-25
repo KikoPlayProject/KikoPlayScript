@@ -7,7 +7,8 @@ info = {
     ["id"] = "Kikyou.b.TraktList",
     ["desc"] = "Trakt 媒体日历脚本（测试中，不稳定） Edited by: kafovin \n"..
                 "从 trakt.tv 刮削媒体的日历时间表，可在日历中自动标记Trakt账户里已关注的媒体。",
-    ["version"] = "0.1.04", -- 0.1.04.220801_fix
+    ["version"] = "0.1.06", -- 0.1.06.221031_fix
+    ["min_kiko"] = "0.9.1",
 }
 
 -- 设置项
@@ -16,7 +17,8 @@ settings = {
         ["title"] = "API - Trakt的Client ID",
         ["default"] = "<<Client_ID_Here>>",
         ["desc"] = "[必填项] 在`trakt.tv`注册账号，并把个人设置`Settings`中的`Your API Apps`申请到的\n"..
-                    "`Client ID` 填入此项。 ( `https://trakt.tv/oauth/applications`，一般为一串字母数字)"
+                    "`Client ID` 填入此项。 ( `https://trakt.tv/oauth/applications`，一般为一串字母数字)",
+        ["group"]="API授权",
     },
     -- ["api_key_trakt_token"] = {
     --     ["title"] = "API - Trakt的设备通行码",
@@ -24,6 +26,7 @@ settings = {
     --     ["desc"] = "[选填项] (此功能不可用)在`trakt.tv`注册账号，并把个人设置`Settings`中的`Your API Apps`里面`Devices`申请到的\n"..
     --                 "`Bearer [access_token]` 填入此项。 ( `https://trakt.tv/oauth/applications`，一般为一串字母数字)\n"..
     --                 "`时间表 - 媒体范围`中，收藏相关功能(my)需要此`API - Trakt的设备通行码`。",
+    --     ["group"]="API授权",
     -- },
     -- ["schedule_info_type_02"]={
     --     ["title"]="时间表 - 剧集类型",
@@ -32,6 +35,7 @@ settings = {
     --             "scripted：包含剧本类、动画类、纪录类等剧集 (默认)。scripted_variety：包含前者，以及综艺节目、颁奖节目等。\n"..
     --             "scripted_show：包含前者，以及游戏节目、真人节目、访谈节目、讨论节目等。tv_show：包括前者，以及体育节目、新闻节目等，即所有节目。",
     --     ["choices"]="scripted,scripted_variety,scripted_show,tv_show",
+    --     ["group"]="API授权",
     -- },
     ["schedule_info_range"]={
         ["title"]="时间表 - 媒体范围",
@@ -41,6 +45,7 @@ settings = {
                 "show_movie_all：所有剧集、电影 (默认)。 `my`相关功能还需要`账户授权`(在脚本设置右键菜单)。",
         -- ["choices"]="show_all,show_movie_all",
         ["choices"]="show_all,show_movie_all,show_all_my,show_movie_all_my,show_my,show_movie_my",
+        ["group"]="时间表",
     },
     ["schedule_info_zmerged"]={
         ["title"]="时间表 - 合并剧集",
@@ -50,6 +55,7 @@ settings = {
                 "2：按所属星期将不同集数合并为一行，不注明集数。",
         ["choices"]="0,1,2",
         -- ["choices"]="show_all,show_my,show_movie_all,show_movie_my",
+        ["group"]="时间表",
     },
     ["schedule_sort"]={
         ["title"]="时间表 - 排序",
@@ -59,6 +65,7 @@ settings = {
                 -- "default：默认。time：按时间升序。",
         ["choices"]="time,timeslot,title,time_mf,timeslot_mf",
         -- ["choices"]="default,time",
+        ["group"]="时间表",
     },
     -- ["schedule_date_release_type"]={
     --     ["title"]="时间表 - 放送日期类型",
@@ -68,6 +75,7 @@ settings = {
     --             "show：均为剧集最初的播映日期，通常为S01E01或试播集的播映日期。\n"..
     --             "show_x_ep：一般为剧集最初的播映日期，对于`自定义星期`是该集的播映日期 (默认)。",
     --     ["choices"]="episode,show,show_x_ep",
+    --     ["group"]="时间表",
     -- },
     ["season_deviance_older"]={
         ["title"]="分组列表 - 近几组",
@@ -76,6 +84,7 @@ settings = {
                 "近1组为 1 (即本组)，近2组为 2 (即本组、上一组)，以此类推。\n"..
                 "0：自1909-02-01所在一组至今。 56：近56组 (默认)。",
         -- 用 1909-02-01 是因为Trakt网站日历的默认显示，似乎从这一天开始逐渐有内容，即 The Mack Sennett Collection S01E01 播出时的那一组。
+        ["group"]="分组列表",
     },
     ["season_deviance_period"]={
         ["title"]="分组列表 - 组周期",
@@ -83,6 +92,7 @@ settings = {
         ["desc"]="分组的列表中 每组显示的时间范围，包括 起始日期、天数，即每个 从某日起几天 的范围。\n"..
                 "m：每月01日。 w：每周的周日。 * 最多33天。\n"..
                 "例如：w14 (每周从周日起的14天) (默认)。",
+        ["group"]="分组列表",
     },
     ["season_order_nextperiod"]={
         ["title"]="分组列表 - 显示下一组",
@@ -91,6 +101,7 @@ settings = {
                 "0：不显示 (默认)。 1：显示在`本组`的后一个。\n"..
                 "-1：显示在`本组`的前一个 (可能会影响`关注`功能的识别)。",
         ["choices"]="-1,0,1",
+        ["group"]="分组列表",
     },
     -- ["season_naming_date"]={
     --     ["title"]="分组列表 - 日期格式",
@@ -102,6 +113,7 @@ settings = {
     --             "Y-m-u：年份-月份-该月周序号，如 `2021-12-5`。Ymu：年份-月份-该月周序号，如 `2021125`。\n"..
     --             "Y-U：年份-该年周序号，如 `2021-52`。YU：年份-该年周序号，如 `202152`。\n",
     --     ["choices"]="Y-m-d,Ymd,Y-m-u,Ymu,Y-U,YU",
+    --     ["group"]="分组列表",
     -- },
     -- ["datetime_zone"]={
     --     ["title"]="时间 - 时区",
@@ -109,6 +121,7 @@ settings = {
     --     ["desc"]="使用的时区。目前仅限使用程序在当前系统的默认时区。\n"..
     --             "system:系统默认时区。",
     --     ["choices"]="system,+08:00"
+    --     ["group"]="时间时区",
     -- },
     ["datetime_zone_hour"]={
         ["title"]="时间 - 时区小时",
@@ -116,6 +129,7 @@ settings = {
         ["desc"]="使用时区的小时数。目前仅限使用程序在当前系统的默认时区。\nAsia/Shanghai(亚洲/上海)的时区为`+08:00`，即此处为`+08`。\n"..
                 "system:系统默认时区 (默认)。",
         ["choices"]="system,-12,-11,-10,-09,-08,-07,-06,-05,-04,-03,-02,-01,+00,+01,+02,+03,+04,+05,+06,+07,+08,+09,+10,+11,+12",
+        ["group"]="时间时区",
     },
     ["datetime_zone_minute"]={
         ["title"]="时间 - 时区分钟",
@@ -124,6 +138,7 @@ settings = {
                 "system:系统默认时区 (默认)。",
         ["choices"]="system,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,"..
                     "30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59",
+        ["group"]="时间时区",
     },
 }
 
@@ -1428,25 +1443,26 @@ function ApiTrakt.testAccessToken(accessToken,tokenType)
     if not string.isEmpty(accessToken) and not string.isEmpty(tokenType)
             and (tokenType=="bearer" or tokenType=="Bearer") then
         local query = {
-            ["ignore_collected"]= true,
-            ["limit"]= 1,
-        }
+            ["hidden"]=false,
+            ["specials"]=false,
+            ["count_specials"]=false,
+         } -- { ["ignore_collected"]= true, ["limit"]= 1, }
         local header = {
             ["Content-Type"]= "application/json",
             ["trakt-api-version"]= "2",
             ["trakt-api-key"]= settings["api_key_trakt"],
             ["Authorization"]= "Bearer "..accessToken
         }
-        local hg_theme= "recommendations/shows" --shows/109975 Flebag (2016)
+        local hg_theme= "shows/109975/progress/watched" --"recommendations/shows" --shows/109975 Flebag (2016)
         local err,reply
         err, reply = kiko.httpget("https://api.trakt.tv/".. hg_theme, query, header)
         if err ~= nil or (reply or{}).hasError==true then
             kiko.log("[ERROR] Trakt.API.reply-test.access_token.httpget: ".. (err or "").."<"..
                     string.format("%03d",(reply or{}).statusCode or 0)..">"..((reply or{}).errInfo or""))
             -- error((err or "").."<".. string.format("%03d",(reply or{}).statusCode)..">"..(reply or{}).errInfo or"")
-            return {["success"]=false, ["statusCode"]= math.floor((reply or{}).statusCode or 0)}
+            return {["success"]=false, ["statusCode"]= math.floor((reply or{}).statusCode or 0), ["statusDesc"]=err, }
         else
-            return {["success"]=true, ["statusCode"]= math.floor((reply or{}).statusCode or 0)}
+            return {["success"]=true, ["statusCode"]= math.floor((reply or{}).statusCode or 0), ["statusDesc"]=err, }
         end
     end
     return {["success"]=false}
@@ -1478,7 +1494,7 @@ function ApiTrakt.getAccessToken(isGuide)
                 tauthAccesstValid = (tauthAccesstTest or {}).success or false
                 if tauthAccesstValid then
                     type(0)
-                elseif tauthAccesstTest.statusCode==401 or tauthAccesstTest.statusCode==403 then
+                elseif tauthAccesstTest.statusCode==401 or tauthAccesstTest.statusCode==403 or tauthAccesstTest.statusDesc=="Host requires authentication" then
                     local _,data = kiko.table2json({
                         ["refresh_token"]= tauthTable.refresh_token,
                         ["grant_type"]= "refresh_token",
@@ -1520,6 +1536,7 @@ function ApiTrakt.getAccessToken(isGuide)
                             end
                             tauthTable= tauthInfoT
                             tauthAccesstValid= true
+                            kiko.log("[INFO]  Trakt.oauth.ot: Access_token is outdated. Exchange refresh_token for new access_token.")
                         end
                     end
                     
