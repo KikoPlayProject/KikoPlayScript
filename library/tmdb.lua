@@ -7,8 +7,9 @@ info = {
     ["id"] = "Kikyou.l.TMDb",
     ["desc"] = "TMDb+ 资料刮削脚本  -  Edited by: kafovin \n"..
                 "从 The Movie Database (TMDb) 刮削影剧元数据，也可设置选择刮削fanart的媒体图片、Jellyfin/Emby的本地元数据、TVmaze的剧集演员。",
-    --            "▲与前一版本不兼容▲ 建议搜索旧关联用`本地数据库`，仅刮削详旧资料细信息时设置`搜索-关键词作标题`为`1`。",
-    ["version"] = "0.2.28" -- 0.2.28.220918_fix
+    --            "▲与0.2.2-版本不兼容▲ 建议搜索旧关联用`本地数据库`，仅刮削详旧资料细信息时设置`搜索-关键词作标题`为`1`。",
+    ["version"] = "0.2.29", -- 0.2.29.221005_build
+    ["min_kiko"] = "0.9.1",
 }
 
 -- 设置项
@@ -19,7 +20,8 @@ settings = {
         ["title"] = "API - TMDb的API密钥",
         ["default"] = "<<API_Key_Here>>",
         ["desc"] = "[必填项] 在`themoviedb.org`注册账号，并把个人设置中的API申请到的\n"..
-                    "`API 密钥` (api key) 填入此项。 ( `https://www.themoviedb.org/settings/api`，一般为一串字母数字)"
+                    "`API 密钥` (api key) 填入此项。 ( `https://www.themoviedb.org/settings/api`，一般为一串字母数字)",
+        ["group"]="API授权",
     },
     ["api_key_fanart"] = {
         ["title"] = "API - fanart的API密钥",
@@ -27,6 +29,7 @@ settings = {
         ["desc"] = "[选填项] 在 `fanart.tv` 注册账号，并把页面`https://fanart.tv/get-an-api-key/`中申请到的\n"..
                     "`Personal API Keys` 填入此项。（一般为一串字母数字）\n"..
                     "注意：若需要跳过刮削fanart.tv的图片，请将设置项 `元数据 - 图片主要来源` 设为 `TMDb_only`。",
+        ["group"]="API授权",
     },
     -- ["api_key_trakt"] = {
     --     ["title"] = "API - Trakt的API密钥",
@@ -34,40 +37,46 @@ settings = {
     --     ["desc"] = "[选填项] 在 `trakt.tv` 注册账号，并把页面`https://trakt.tv/oauth/applications`中申请到的\n"..
     --                 "`Client ID` 填入此项。（一般为一串字母数字）\n"..
     --                 "注意：目前Trakt用于 用户记录，例如 评分媒体、标记媒体为 稍后看/已看过/已收集。",
+    --     ["group"]="API授权",
     -- },
-    ["search_keyword_process"] = {
-        ["title"] = "搜索 - 关键词处理",
-        ["default"] = "filename",
-        ["desc"] = "输入的字符经过何种处理作为关键词，来搜索媒体（不含集序号）。\n"..
-                "filename：作为除去拓展名的文件名 (默认)。 plain：不处理，作为单纯的标题（搜索请不要输入季序号等）。", -- 丢弃`person`的演员搜索结果
-        ["choices"] = "filename,plain",
-    },
-    ["search_keyword_astitle"] = {
-        ["title"] = "搜索 - 关键词作标题",
-        ["default"] = "0",
-        ["desc"] = "搜索的关键词是否作为标题。\n 0：不使用 (默认)。 1：使用关键词作为标题。",
-        ["choices"] = "0,1",
-    },
-    ["search_list_season_all"] = {
-        ["title"] = "搜索 - 显示更多季",
-        ["default"] = "1",
-        ["desc"] = "搜索操作中 在没识别到季序号时，是否显示全部季数。\n".."当且仅当 `搜索 - 关键词处理` 设置为 `filename`时有效。\n"..
-                "0：没识别到季序号时，仅显示第1季、或特别篇。 1：没识别到季序号时，显示全部季数 (默认)。", -- 丢弃`person`的演员搜索结果
-        ["choices"] = "0,1",
-    },
-    ["search_list_season_epgroup"] = {
-        ["title"] = "搜索 - 显示剧集其他版本",
-        ["default"] = "0",
-        ["desc"] = "搜索操作中 是否搜索并显示 剧集其他版本及其各季。其他版本会把剧集以不同方式分季(如：原播出时间、故事线、数字出版等)。\n"..
-                "0：不显示其他版本的季数 (默认)。 1：显示剧集其他版本及其各季数。", -- 丢弃`person`的演员搜索结果
-        ["choices"] = "0,1",
-    },
-    ["search_type"] = {
-        ["title"] = "搜索 - 媒体类型",
-        ["default"] = "multi",
-        ["desc"] = "搜索的数据仅限此媒体类型。\n movie：电影。 multi：电影/剧集 (默认)。 tv：剧集。", -- 丢弃`person`的演员搜索结果
-        ["choices"] = "movie,multi,tv",
-    },
+    -- ["search_keyword_process"] = {
+    --     ["title"] = "搜索 - 关键词处理",
+    --     ["default"] = "filename",
+    --     ["desc"] = "输入的字符经过何种处理作为关键词，来搜索媒体（不含集序号）。\n"..
+    --             "filename：作为除去拓展名的文件名 (默认)。 plain：不处理，作为单纯的标题关键词（搜索请不要输入季序号等）。", -- 丢弃`person`的演员搜索结果
+    --     ["choices"] = "filename,plain",
+    --     ["group"]="搜索",
+    -- },
+    -- ["search_keyword_astitle"] = {
+    --     ["title"] = "搜索 - 关键词作标题",
+    --     ["default"] = "0",
+    --     ["desc"] = "搜索的关键词是否作为标题。\n 0：不使用 (默认)。 1：使用关键词作为标题。",
+    --     ["choices"] = "0,1",
+    --     ["group"]="搜索",
+    -- },
+    -- ["search_list_season_all"] = {
+    --     ["title"] = "搜索 - 显示更多季",
+    --     ["default"] = "1",
+    --     ["desc"] = "搜索操作中 在没识别到季序号时，是否显示全部季数。\n".."当且仅当 `搜索 - 关键词处理` 设置为 `filename`时有效。\n"..
+    --             "0：没识别到季序号时，仅显示第1季、或特别篇。 1：没识别到季序号时，显示全部季数 (默认)。", -- 丢弃`person`的演员搜索结果
+    --     ["choices"] = "0,1",
+    --     ["group"]="搜索",
+    -- },
+    -- ["search_list_season_epgroup"] = {
+    --     ["title"] = "搜索 - 显示剧集其他版本",
+    --     ["default"] = "0",
+    --     ["desc"] = "搜索操作中 是否搜索并显示 剧集其他版本及其各季。其他版本会把剧集以不同方式分季(如：原播出时间、故事线、数字出版等)。\n"..
+    --             "0：不显示其他版本的季数 (默认)。 1：显示剧集其他版本及其各季数。", -- 丢弃`person`的演员搜索结果
+    --     ["choices"] = "0,1",
+    --     ["group"]="搜索",
+    -- },
+    -- ["search_type"] = {
+    --     ["title"] = "搜索 - 媒体类型",
+    --     ["default"] = "multi",
+    --     ["desc"] = "搜索的数据仅限此媒体类型。\n movie：电影。 multi：电影/剧集 (默认)。 tv：剧集。", -- 丢弃`person`的演员搜索结果
+    --     ["choices"] = "movie,multi,tv",
+    --     ["group"]="搜索",
+    -- },
     ["match_source"] = {
         ["title"] = "匹配 - 数据来源",
         ["default"] = "online_TMDb_filename",
@@ -75,6 +84,7 @@ settings = {
                     "local_Emby_nfo：来自Jellyfin/Emby在刮削TMDb媒体后 在本地媒体文件同目录存储元数据的 .nfo格式文件(内含.xml格式文本) (不稳定/可能不兼容)；\n" ..
                     "online_TMDb_filename：从文件名模糊识别关键词，再用TMDb的API刮削元数据 (不稳定) (默认)。 (*￣▽￣）", -- 丢弃`person`的演员搜索结果
         ["choices"] = "local_Emby_nfo,online_TMDb_filename",
+        ["group"]="匹配",
     },
     ["match_priority"] = {
         ["title"] = "匹配 - 备用媒体类型",
@@ -85,9 +95,10 @@ settings = {
                     "movie：电影。multi：采用刮削时排序靠前的影/剧 (默认)。tv：剧集。single：以对话框确定影/剧某一种 (不稳定)。",
         ["choices"] = "movie,multi,single,tv",
                     -- "movie,multi,tv,movie_other,multi_other,tv_other"
+        ["group"]="匹配",
     },
     ["metadata_lang"] = {
-        ["title"] = "元数据 - 语言",
+        ["title"] = "元数据 - 语言地区",
         ["default"] = "zh-CN",
         ["desc"] = "按此`语言编码-地区编码`搜索元数据资料，主要指简介、海报、搜索的标题等。看着有很多语言，其实大部分都缺乏资料。\n" ..
                     "注意：再次关联导致标题改变时，弹幕仍然按照旧标题识别，请使用`搜索 - 关键词作标题`的功能重新搜索详细信息。\n" ..
@@ -101,6 +112,7 @@ settings = {
                     ",ta-IN,te-IN,th-TH,tl-PH,tr-TR,uk-UA,vi-VN,zh-CN,zh-HK,zh-SG,zh-TW,zu-ZA",
         -- ["choices"] = "ar-SA,de-DE,en-US,es-ES,fr-FR,it-IT,ja-JP,ko-KR,pt-PT,ru-RU,zh-CN,zh-HK,zh-TW",
         -- ["choices"] = "en-US,fr-FR,ja-JP,ru-RU,zh-CN,zh-HK,zh-TW",
+        ["group"]="元数据 - 语言",
     },
     ["metadata_info_update_keep"] = {
         ["title"] = "元数据 - 更新时维持更改",
@@ -108,6 +120,7 @@ settings = {
         ["desc"] = "更新资料夹元数据时，对于之前的编辑的更改(例如描述、演职员表等)，是否保留。\n" ..
                     "0：不保留 (默认)。 1：保留(当前不支持此功能)。",
         ["choices"] = "0",
+        ["group"]="元数据 - 其他",
     },
     ["metadata_info_origin_title"] = {
         ["title"] = "元数据 - 标题优先原语言",
@@ -116,6 +129,7 @@ settings = {
                     "注意：再次关联导致标题改变时，弹幕仍然按照旧标题识别，请使用`搜索 - 关键词作标题`的功能重新搜索详细信息。\n"..
                     "0：优先使用刮削时`元数据 - 语言`所设定的语言 (默认)。 1：优先使用原语言。",
         ["choices"] = "0,1",
+        ["group"]="元数据 - 语言",
     },
     ["metadata_info_origin_image"] = {
         ["title"] = "元数据 - 图片优先原语言",
@@ -123,6 +137,7 @@ settings = {
         ["desc"] = "媒体的图片 是否优先使用媒体原语言。\n"..
                     "0：优先使用刮削时`元数据 - 语言`所设定的语言 (默认)。 1：优先使用原语言。 2：优先使用无语言。",
         ["choices"] = "0,1,2",
+        ["group"]="元数据 - 语言",
     },
     ["metadata_image_priority"]={
         ["title"] = "元数据 - 图片主要来源",
@@ -133,6 +148,7 @@ settings = {
                     "TMDb_only：图片仅TMDb，(不会从fanart刮削图片，仅此项不需要 fanart的API密钥) (默认)。\n"..
                     "TMDb_prior：图片优先TMDb，TMDb提供海报、背景，其他的由fanart提供。",
         ["choices"] = "fanart_prior,TMDb_only,TMDb_prior",
+        ["group"]="元数据 - 图片",
     },
     ["metadata_show_imgtype"] = {
         ["title"] = "元数据 - 显示的图片种类",
@@ -145,18 +161,21 @@ settings = {
                     -- "logo: 标志。logoL: 标志*。art: 艺术图。artL: 艺术图*。otherart: 其他艺术图。",
         ["choices"] = "poster,banner,thumb,background,logo,art,otherart",
         -- ["choices"] = "poster,banner,thumb,background,logo,logoL,art,artL,otherart",
+        ["group"]="元数据 - 图片",
     },
     ["metadata_castcrew_castcount"]={
         ["title"] = "元数据 - 演员总数至多为",
         ["default"] = "12",
         ["desc"] = "元数据的演员表至多保留多少演员 (默认 12)。\n"..
                     "其中，数目>0时，为至多保留的数目；数目=0时，不保留；数目<0时，保留所有；小数，则向负无穷方向取整。",
+        ["group"]="元数据 - 演职员",
     },
     ["metadata_castcrew_crewcount"]={
         ["title"] = "元数据 - 职员总数至多为",
         ["default"] = "12",
         ["desc"] = "元数据的职员表至多保留多少职员 (默认 12)。\n"..
                     "其中，数目>0时，为至多保留的数目；数目=0时，不保留；数目<0时，保留所有；小数，则向负无穷方向取整。",
+        ["group"]="元数据 - 演职员",
     },
     ["metadata_castcrew_season_aggregate"]={
         ["title"] = "元数据 - 本季所有演职员",
@@ -164,6 +183,7 @@ settings = {
         ["desc"] = "元数据对于剧集某季的演职员表，是否也包括所有单集的演职员。\n"..
                     "0：仅包括出现于或负责本季整季的演职员 (默认)。 1：包含前者，以及出现于或负责各集的演职员(按默认顺序)。",
         ["choices"] = "0,1",
+        ["group"]="元数据 - 演职员",
     },
     ["metadata_castcrew_source_cast"]={
         ["title"] = "元数据 - 演员来源",
@@ -172,6 +192,7 @@ settings = {
                     "TMDb_season：本电影或剧集本季的演员表 来自TMDb  (默认)。\n"..
                     "TVmaze_show：剧集本季的演员表 来自TVmaze 对应的本剧集整剧(不是本季)，本电影 来源取默认，仅英文。",
         ["choices"] = "TMDb_season,TVmaze_show",
+        ["group"]="元数据 - 演职员",
     },
 }
 
@@ -179,6 +200,57 @@ scriptmenus = {
     {["title"]="检测连接", ["id"]="detect_valid_api"},
     {["title"]="使用方法", ["id"]="link_repo_usage"},
     {["title"]="关于", ["id"]="display_dialog_about"},
+}
+
+searchsettings = {
+    ["search_keyword_astitle"] = {
+        ["title"] = "关键词作弹幕池标题 ",
+        ["default"] = "0",
+        ["desc"] = "搜索的关键词是否作为标题。\n 不选(0)：不使用 (默认)。 选中(1)：使用关键词作为标题。",
+        -- ["choices"] = "0,1",
+        ["save"]=false,
+        ["display_type"] = 3,
+    },
+    ["search_keyword_process"] = {
+        ["title"] = "关键词作文件名识别  | ",
+        ["default"] = "1",
+        -- ["default"] = "filename",
+        ["desc"] = "输入的字符经过何种处理作为关键词，来搜索媒体（不含集序号）。\n"..
+                "不选(0)：不处理，作为单纯的标题关键词（搜索请不要输入季序号等）。 选中(1)：作为除去拓展名的文件名 (默认)。", -- 丢弃`person`的演员搜索结果
+        --      "filename：作为除去拓展名的文件名 (默认)。 plain：不处理，作为单纯的标题关键词（搜索请不要输入季序号等）。", -- 丢弃`person`的演员搜索结果
+        -- ["choices"] = "filename,plain",
+        ["save"]=true,
+        ["display_type"] = 3,
+    },
+    ["search_list_season_all"] = {
+        ["title"] = "显示更多季 ",
+        ["default"] = "1",
+        ["desc"] = "搜索操作中 在没识别到季序号时，是否显示全部季数。\n".."当且仅当 `搜索 - 关键词处理` 设置为 `filename`时有效。\n"..
+                "不选(0)：没识别到季序号时，仅显示第1季、或特别篇。 选中(1)：没识别到季序号时，显示全部季数 (默认)。", -- 丢弃`person`的演员搜索结果
+        -- ["choices"] = "0,1",
+        ["save"]=false,
+        ["display_type"] = 3,
+    },
+    ["search_list_season_epgroup"] = {
+        ["title"] = "显示其他版本  | ",
+        ["default"] = "0",
+        ["desc"] = "搜索操作中 是否搜索并显示 剧集其他版本及其各季。其他版本会把剧集以不同方式分季(如：原播出时间、故事线、数字出版等)。\n"..
+                "不选(0)：不显示其他版本的季数 (默认)。 选中(1)：显示剧集其他版本及其各季数。", -- 丢弃`person`的演员搜索结果
+        -- ["choices"] = "0,1",
+        ["save"]=false,
+        ["display_type"] = 3,
+    },
+    ["search_type"] = {
+        ["title"] = "媒体类型",
+        ["default"] = "电影/剧集",
+        -- ["default"] = "multi",
+        ["desc"] = "搜索的数据仅限此媒体类型。\n 电影：仅电影。 电影/剧集：电影 或 剧集 (默认)。 剧集：仅剧集。", -- 丢弃`person`的演员搜索结果
+        -- ["desc"] = "搜索的数据仅限此媒体类型。\n movie：电影。 multi：电影/剧集 (默认)。 tv：剧集。", -- 丢弃`person`的演员搜索结果
+        ["choices"] = "电影/剧集,电影,剧集",
+        -- ["choices"] = "movie,multi,tv",
+        ["save"]=false,
+        ["display_type"] = 1,
+    },
 }
 
 -- 不会 在运行函数内更新值
@@ -482,21 +554,28 @@ Anime_data = {
 -- 完成搜索功能
 -- keyword： string，搜索关键字
 -- 返回：Array[AnimeLite]
-function search(keyword)
+function search(keyword,options)
     local settings_search_type=""
-    if(settings["search_type"] ~= "movie" and settings["search_type"] ~= "tv") then
+    if(options["search_type"] ~= "movie" and options["search_type"] ~= "tv") then
         settings_search_type="multi"
-    else settings_search_type=settings["search_type"]
+    else settings_search_type=options["search_type"]
     end
     local mediais={}
+    if options["search_keyword_process"] =="0" then options["search_keyword_process"]="plain"
+    elseif options["search_keyword_process"] =="1" then options["search_keyword_process"]="filename"
+    end
+    if options["search_type"] =="电影/剧集" then options["search_type"]="multi"
+    elseif options["search_type"] =="电影" then options["search_type"]="movie"
+    elseif options["search_type"] =="剧集" then options["search_type"]="tv"
+    end
 
-    if settings["search_keyword_process"]=="plain" then
-        if settings.search_keyword_astitle =="0" then
-            mediais= searchMediaInfo(keyword,settings_search_type)
-        elseif settings.search_keyword_astitle =="1" then
-            mediais= searchMediaInfo(keyword,settings_search_type,keyword)
+    if options["search_keyword_process"]=="plain" then
+        if options["search_keyword_astitle"] =="0" then
+            mediais= searchMediaInfo(keyword,options,settings_search_type)
+        elseif options["search_keyword_astitle"] =="1" then
+            mediais= searchMediaInfo(keyword,options,settings_search_type,keyword)
         end
-    elseif true or settings["search_keyword_process"]=="filename" then
+    elseif true or options["search_keyword_process"]=="filename" then
         local mType = "multi"
         local mTitle,mSeason,mEp,mEpX,mTitleX,mEpType = "","","","","",""
         local resMirbf= Path.getMediaInfoRawByFilename(keyword..".mkv")
@@ -517,15 +596,15 @@ function search(keyword)
         end
 
         local resultSearch
-        if settings.search_keyword_astitle =="0" then
-            resultSearch= searchMediaInfo(mTitle,
+        if options["search_keyword_astitle"] =="0" then
+            resultSearch= searchMediaInfo(mTitle,options,
                 ((settings_search_type=="multi")and{mType}or{settings_search_type})[1])
-        elseif settings.search_keyword_astitle =="1" then
-            resultSearch= searchMediaInfo(mTitle,
+        elseif options["search_keyword_astitle"] =="1" then
+            resultSearch= searchMediaInfo(mTitle,options,
                 ((settings_search_type=="multi")and{mType}or{settings_search_type})[1],keyword)
         end
         local mSeasonTv = ""
-        local tmpsSearchlSeasonall= settings["search_list_season_all"]
+        local tmpsSearchlSeasonall= options["search_list_season_all"]
         for _, value in ipairs(resultSearch or {}) do
             if mSeason =="" and value["media_type"] == "movie" then
                 table.insert(mediais, value)
@@ -556,9 +635,10 @@ function search(keyword)
 
     return mediais
 end
-function searchMediaInfo(keyword, settings_search_type, old_title)
+function searchMediaInfo(keyword, options, settings_search_type, old_title)
     -- kiko.log("[INFO]  Searching <" .. keyword .. "> in " .. settings_search_type)
     -- 获取 是否 元数据使用原语言标题
+    options = options or {}
     local miotTmp = settings['metadata_info_origin_title']
     if (miotTmp == '0') then
         Metadata_info_origin_title = false
@@ -790,7 +870,7 @@ function searchMediaInfo(keyword, settings_search_type, old_title)
             local queryTv = {
                 ["api_key"] = settings["api_key"],
                 ["language"] = settings["metadata_lang"],
-                ["append_to_response"] = ((settings["search_list_season_epgroup"]=="1") and{"episode_groups"}or{""})[1],
+                ["append_to_response"] = ((options["search_list_season_epgroup"]=="1") and{"episode_groups"}or{""})[1],
             }
             local objTv=Kikoplus.httpgetMediaId(queryTv,data["media_type"] .. "/" .. data["media_id"])
             -- info
@@ -993,7 +1073,7 @@ function searchMediaInfo(keyword, settings_search_type, old_title)
                 })
             end
 
-            if settings["search_list_season_epgroup"]=="1" then
+            if options["search_list_season_epgroup"]=="1" then
                 local hGetBatchTableEg={ ["url"]= {}, ["query"]= {}, ["header"]= {}, ["redirect"]= true, }
                 local replyEg,contentEg, objEg=nil,nil, {}
                 local urlPrefix= "http://api.themoviedb.org/3/"
@@ -2221,8 +2301,9 @@ function detail(anime)
                 end
                 ::continue_detail_fan_mfti::
             end
-            (anime_data.fanart_path or{})[fti]={}
-            (anime_data.fanart_path or{})[fti]["origin"]=imgPathVoine.origin or imgPathVoine.noLang
+            anime_data.fanart_path = anime_data.fanart_path or {}
+            anime_data.fanart_path[fti] = {}
+            anime_data.fanart_path[fti]["origin"] = imgPathVoine.origin or imgPathVoine.noLang
             if Metadata_info_origin_image==true then
                 if settings["metadata_info_origin_image"]=="2" then
                     (anime_data.fanart_path or{})[fti]["interf"]= imgPathVoine.noLang or
@@ -2265,8 +2346,9 @@ function detail(anime)
                     end
                     ::continue_detail_fan_tfti::
                 end
-                (anime_data.fanart_path or{})[fti]={}
-                (anime_data.fanart_path or{})[fti]["origin"]=table.deepCopy(imgPathSoine.origin or imgPathSoine.noLang) or{}
+                anime_data.fanart_path = anime_data.fanart_path or {}
+                anime_data.fanart_path[fti] = {}
+                anime_data.fanart_path[fti]["origin"] = table.deepCopy(imgPathSoine.origin or imgPathSoine.noLang) or{}
                 if Metadata_info_origin_image==true then
                     (anime_data.fanart_path or{})[fti]["interf"]= table.deepCopy(imgPathSoine.origin or
                             imgPathSoine.noLang or imgPathSoine.interf or imgPathSoine.en) or{}
@@ -2639,7 +2721,7 @@ function match(path)
         if mType == "movie" then
             mSeason=1 -- 电影默认 S01E01 (EP)
             -- mediaInfo
-            resultSearch = searchMediaInfo(mTitle,mType)
+            resultSearch = searchMediaInfo(mTitle,nil,mType)
             if #resultSearch < mPriority then
                 kiko.log("[ERROR] Failed to find movie <"..mTitle..">.")
                 kiko.message("无法找到电影 <"..mTitle..">。", 1)
@@ -2681,7 +2763,7 @@ function match(path)
             else mSeasonTv = math.floor(tonumber(mSeason))
             end
             -- mediaInfo
-            resultSearch = searchMediaInfo(mTitle,mType)
+            resultSearch = searchMediaInfo(mTitle,nil,mType)
             for _, value in ipairs(resultSearch or {}) do
                 if mSeasonTv ~= 0 then
                     if value["season_number"] == mSeasonTv or tostring(value["season_number"]) == tostring(mSeasonTv) then
@@ -2755,7 +2837,7 @@ function match(path)
             end
         else
             -- mediaInfo
-            resultSearch = searchMediaInfo(mTitle,"multi")
+            resultSearch = searchMediaInfo(mTitle,nil,"multi")
             if #resultSearch < mPriority then
                 kiko.log("[ERROR] Failed to find media <"..mTitle..">。")
                 kiko.message("无法找到媒体 <"..mTitle..">。", 1)
@@ -3648,6 +3730,9 @@ menus = {{
         ["title"] = "使用豆瓣/贴吧搜索",
         ["id"] = "open_webpage_media_search",
     },{
+        ["title"] = "使用Bagumi搜索",
+        ["id"] = "open_webpage_media_anime",
+    },{
         ["title"] = "打开fanart页面",
         ["id"] = "open_webpage_media_artwork",
     },{
@@ -3710,23 +3795,42 @@ function menuclick(menuid, anime)
         else
             kiko.message("未找到 <"..anime["name"].."> 的相关搜索页面。\n请右键资料夹尝试更新详细信息。", NM_HIDE|NM_ERROR)
         end
-        Kikoplus.systemAddToPasteboard(anime_data.media_title.." "..anime_data.original_title..
-                    (string.isEmpty(anime_data.season_title) and{ "" }or{ " "..anime_data.season_title })[1],"媒体标题")
+        local textPb= anime_data.media_title.." "..(anime_data.original_title or "").. (string.isEmpty(anime_data.season_title) and{ "" }or{ " "..anime_data.season_title })[1]
+        Kikoplus.systemAddToPasteboard(textPb,"< "..textPb.." >")
     elseif menuid == "open_webpage_media_search" then
         kiko.log("Open searching page of <"..anime["name"]..">.")
-        kiko.message("在豆瓣/贴吧/B站搜索 <"..anime["name"]..">", NM_HIDE)
+        kiko.message("使用豆瓣/贴吧/B站搜索 <"..anime["name"]..">", NM_HIDE)
         if not string.isEmpty(anime_data.media_title) then
             kiko.execute(true, "cmd", {"/c", "start", "https://tieba.baidu.com/f/search/fm?ie=UTF-8^&qw=".. string.gsub(anime_data.media_title, "[ %c%p%^%&%|<>]", "%%20")})
-            kiko.execute(true, "cmd", {"/c", "start", "https://www.douban.com/search?cat=1002^&q=".. string.gsub(anime_data.media_title.." "..
-                    (((anime_data.media_type=="movie" or (anime_data.season_count or anime_data.season_number)==1) and{""} or{anime_data.season_title or""})[1]),
-                    "[ %c%p\'\"%^%&%|<>]","%%20")})
+            kiko.execute(true, "cmd", {"/c", "start", "https://www.douban.com/search?cat=1002^&q=".. string.gsub(anime_data.media_title
+                    -- .." "..(((anime_data.media_type=="movie" or (anime_data.season_count or anime_data.season_number)==1) and{""} or{anime_data.season_title or""})[1])
+                    ,"[ %c%p\'\"%^%&%|<>]","%%20")})
             kiko.execute(true, "cmd", {"/c", "start", "https://search.bilibili.com/all?keyword=".. string.gsub(anime_data.media_title.." ".. (anime_data.season_title or""),
                     "[ %c%p\'\"%^%&%|<>]","+")})
         else
             kiko.message("未找到 <"..anime["name"].."> 的相关搜索页面。\n请右键资料夹尝试更新详细信息。", NM_HIDE|NM_ERROR)
         end
-        Kikoplus.systemAddToPasteboard(anime_data.media_title.." "..anime_data.original_title..
-                    (string.isEmpty(anime_data.season_title) and{ "" }or{ " "..anime_data.season_title })[1],"媒体标题")
+        local textPb= anime_data.media_title.." "..(anime_data.original_title or "").. (string.isEmpty(anime_data.season_title) and{ "" }or{ " "..anime_data.season_title })[1]
+        Kikoplus.systemAddToPasteboard(textPb,"< "..textPb.." >")
+    elseif menuid == "open_webpage_media_anime" then
+        kiko.log("Open anime page of <"..anime["name"]..">.")
+        kiko.message("使用Bangumi/AniDb/AniList搜索 <"..anime["name"]..">", NM_HIDE)
+        if not string.isEmpty(anime_data.media_title) then
+            kiko.execute(true, "cmd", {"/c", "start", "https://bgm.tv/subject_search/".. string.gsub(anime_data.media_title,
+                    "[ %c%p\'\"%^%&%|<>]","+") .."?cat=all"})
+        else
+            kiko.message("未找到 <"..anime["name"].."> 的Bangumi搜索页面。\n请右键资料夹尝试更新详细信息。", NM_HIDE|NM_ERROR)
+        end
+        if not string.isEmpty(anime_data.original_title) then
+            kiko.execute(true, "cmd", {"/c", "start", "https://anidb.net/search/fulltext/?adb.search=".. string.gsub(anime_data.original_title,
+                    "[ %c%p\'\"%^%&%|<>]","%%20") .."&do.search=1&entity.animetb=1&entity.collectiontb=1&field.titles=1"})
+            kiko.execute(true, "cmd", {"/c", "start", "https://anilist.co/search/anime?search=".. string.gsub(anime_data.original_title,
+                    "[ %c%p\'\"%^%&%|<>]","%%20")})
+        else
+            kiko.message("未找到 <"..anime["name"].."> 的相关搜索页面。\n请右键资料夹尝试更新详细信息。", NM_HIDE|NM_ERROR)
+        end
+        local textPb= anime_data.media_title.." "..(anime_data.original_title or "").. (string.isEmpty(anime_data.season_title) and{ "" }or{ " "..anime_data.season_title })[1]
+        Kikoplus.systemAddToPasteboard(textPb,"< "..textPb.." >")
     elseif menuid == "open_webpage_media_home" then
         kiko.log("Open home page of <"..anime["name"]..">.")
         if not string.isEmpty(anime_data.homepage_path) then
@@ -3786,8 +3890,8 @@ function menuclick(menuid, anime)
             kiko.message("未找到 <"..anime["name"].."> 的IMDb id。\n请右键资料夹尝试更新详细信息。", NM_HIDE|NM_ERROR)
         end
     
-        Kikoplus.systemAddToPasteboard(anime_data.media_title.." "..anime_data.original_title..
-                (string.isEmpty(anime_data.season_title) and{ "" }or{ " "..anime_data.season_title })[1],"媒体标题")
+        local textPb= anime_data.media_title.." "..anime_data.original_title.. (string.isEmpty(anime_data.season_title) and{ "" }or{ " "..anime_data.season_title })[1]
+        Kikoplus.systemAddToPasteboard(textPb,"< "..textPb.." >")
     elseif menuid == "show_media_matadata_table" then
         kiko.viewtable(anime_data)
         kiko.viewtable(anime)
@@ -4285,7 +4389,7 @@ function scriptmenuclick(menuid)
     kiko.log(string.format("[INFO]  Script menu click: %s", menuid))
     if menuid == "detect_valid_api" then
         local diaTitle, diaTip, diaText = "测试 API 是否有效连接","",""
-        local query = { ["api_key"] = settings.api_key, ["language"]="zh-CN", }
+        local query = { ["api_key"] = settings["api_key"], ["language"]="zh-CN", }
         local header = { ["Accept"] = "application/json", }
         local hg_theme= "tv/67070" -- Flebag (2016)
         local err,reply
@@ -4304,7 +4408,7 @@ function scriptmenuclick(menuid)
         else
             diaTip = diaTip.. "\t成功连接 `API - TMDb的API密钥` ！\n"
         end
-        query = { ["api_key"] = settings.api_key_fanart }
+        query = { ["api_key"] = settings["api_key_fanart"] }
         header = { ["Accept"] = "application/json" }
         hg_theme= "tv/314614" -- Flebag (2016)
         err,reply = nil,nil
@@ -4386,26 +4490,27 @@ function Path.getMediaInfoRawByFilename(filename)
     -- kiko.regex([[...]],"options"):gmatch("target","repl")
     -- kiko.regex([[...]],"options"):gsub("target","repl")
     
+    -- 阿拉伯数字:季集 regex: (S)(01)(E)(02)(-)(03) | ()()(EP)(02)()()
+    local patternSENum=[[^([Ss]|第{0,1}?|)(\d{1,}(?=[EeXx季部第]|[話集]\d{1,})|)([EeXx]|[Ee][Pp]{0,1}|[季部][ \-\.]{0,3}|[季部]{0,1}[ \-\.]{0,3}[第話集]|)(\d{1,})([話集]{0,1}[\-\.]{0,1}|)(\d{1,}|)([^\t\r\n]{0,}?)$]]
+    -- 含中文数字:季集 regex: (第)(一)()(季第)(二)(-)(三)(集)...
+    local patternSEZh=[[^(第|)((\d{1,}|[〇零一二三四五六七八九十]{1,5})(?=[季部第])|)([季部][ \-\.]{0,3}第{0,1}|第)(\d{1,}|[〇零一二三四五六七八九十]{1,5})([—\-\.]{0,1})((\d{1,}|[〇零一二三四五六七八九十]{1,5})|)([話话集]{0,1})([^\t\r\n]{0,}?)$]]
+
     -- kiko.regex不能多开，需要依次，否则会后来的替代掉之前的
     -- 普通集:标题-季集 regex: (Title)(.)(S01E02)... |  (Title)(.)(第一季第二集)...
-    local patternSE=[[^([^\t\r\n]{0,}?)([ \-\.\[])((([Ss]{0,1}(\d{1,}[Ee]|(?<=[Ss \-\.\]\[])\d{1,2}[Xx])\d{1,}([\-]\d{1,3}|))|([Ee][Pp]{0,1}\d{1,}([\-\.]\d{1,3}|))|(第(\d{1,}|[〇零一二三四五六七八九十]{1,5})(([季部][ \-\.]{0,3}第{0,1}(\d{1,}|([〇零一二三四五六七八九十]{1,5}))([—\-\.]\d{1,3}|)[話话集]{0,1})|([\-\.]\d{1,3}|)[話话集]{0,1}))|(?<![ \.\[][HhXx]\.)\d{2,3}([\-\.]\d{1,}|)(?!\.))(?=[ \-\.\[\]\(\)])(?!p))([^\t\r\n]{0,})$]]
-    
-    -- 阿拉伯数字:季集 regex: (S)(01)(E)(02)(-)(03) | ()()(EP)(02)()()
-    local patternSENum=[[^([Ss]|第{0,1}?|)(\d{1,}(?=[EeXx季部第]|[話集]\d{1,})|)([EeXx]|[Ee][Pp]{0,1}|[季部][ \-\.]{0,3}|[季部]{0,1}[ \-\.]{0,3}[第話集]|)(\d{1,})([話集]{0,1}[\-\.]{0,1}|)(\d{1,}|)$]]
-    -- 含中文数字:季集 regex: (第)(一)()(季第)(二)(-)(三)(集)...
-    local patternSEZh=[[^(第|)((\d{1,}|[〇零一二三四五六七八九十]{1,5})(?=[季部第])|)([季部][ \-\.]{0,3}第{0,1}|第)(\d{1,}|[〇零一二三四五六七八九十]{1,5})([—\-\.]{0,1})((\d{1,}|[〇零一二三四五六七八九十]{1,5})|)([話话集]{0,1})$]]
+    -- local patternSE=[[^([^\t\r\n]{0,}?)([ \-\.\[])((([Ss]{0,1}(\d{1,}[Ee]|(?<=[Ss \-\.\]\[])\d{1,2}[Xx])\d{1,}([\-]\d{1,3}|))|([Ee][Pp]{0,1}\d{1,}([\-\.]\d{1,3}|))|(第(\d{1,}|[〇零一二三四五六七八九十]{1,5})(([季部][ \-\.]{0,3}第{0,1}(\d{1,}|([〇零一二三四五六七八九十]{1,5}))([—\-\.]\d{1,3}|)[話话集]{0,1})|([\-\.]\d{1,3}|)[話话集]{0,1}))|(?<![ \.\[][HhXx]\.)\d{2,3}([\-\.]\d{1,}|)(?!\.))(?=[ \-\.\[\]\(\)])(?!p))([^\t\r\n]{0,})$]]
+    local patternSE=[[^([^\t\r\n]{0,}?)([ \-\.\[])((([Ss]{0,1}((\d{1,}[Ee])|((?<=[Ss \-\.\]\[])\d{1,2}[Xx]))\d{1,}(([\-][Ee]{0,1}\d{1,3})|))|([Ee][Pp]{0,1}\d{1,}(([ \-\.]{1,3}[Ee]{0,1}\d{1,3})|)(?=[ \-\.\[\]\(\)]))|(第((\d{1,})|([〇零一二三四五六七八九十]{1,5}))(([季部][ \-\.]{0,3}第{0,1}(\d{1,}|([〇零一二三四五六七八九十]{1,5}))([ —\-\.]{1,3}\d{1,3}|)[話话集]{0,1})|([\-\.]\d{1,3}|)[話话集]))|((?<![ \.\[][HhXx]\.)\d{2,3}([ \-\.]{1,3}\d{1,}|)(?=(([ \-\.\[\]\(\)]{0,}$)|((?!\.)[ \-\.\[\]\(\)]{2,})|([ \-\.\[\]\(\)]{0,}?\.((avi)|(flv)|(mpg)|(mp4)|(mkv)|(rm)|(rmvb)|(ts)|(wmv))$)))(?!p[ \-\.\[\]\(\)])(?![^\t\r\n]{0,}?[ \-\.\[]((第[\d〇零一二三四五六七八九十]{1,})|([Ss]\d{1,})|(\d{0,}[Ee][Pp]{0,1}\d{1,})|(\d{1,2}[Xx]\d{1,})))))[^ \-\.\[\]\(\)]{0,})([^\t\r\n]{0,})$]]
 
     -- 特别篇:标题 regex: (Title)(.)(SP)...
-    local patternSp=[[^([^\t\r\n]{0,}?)([ \-\.\[])((([Ss第](\d{1,}|[〇零一二三四五六七八九十]{1,5}[季部]{0,1}))[ \-\.\(\)\[\]\{\}].{0,}|[^ \-\.\(\)\[\]\{\}\t\r\n]+?|)([Ss]pecial[s]{0,1}|[Ee]xtra[s]{0,1}|[Ss][Pp]|([^ \-\.\(\)\[\]\{\}\t]{0,}特[别別典][篇编編片]{0,1})|[Oo][Pp]|片[頭头]曲{0,1}|[Ee][Dd]|片尾曲{0,1}|[Tt]railer[s]{0,1}|[Cc][Mm]|[Pp][Vv]|[预預予][告][篇编編片]{0,1})([ \-\.]{0,3}\d+[\] \.]|)|([Ss第](\d{1,}|[〇零一二三四五六七八九十]{1,5}[季部])[^ \-\.\(\)\[\]\{\}\t\r\n]{1,}))(?=[\] \-\.])(?!p)([^\t\r\n]{0,})$]]
+    local patternSp=[[^([^\t\r\n]{0,}?)([ \-\.\[\]\(\)]{1,3})(((?<![ \.\[][HhXx]\.)[\d〇零一二三四五六七八九十]{1,3}([\-\.]\d{1,}|)(?=($|((?!\.)[ \-\.\[\]\(\)]{2,})|([ \-\.\[\]\(\)]{0,}?\.((avi)|(flv)|(mpg)|(mp4)|(mkv)|(rm)|(rmvb)|(ts)|(wmv))$)))(?![pPiIkK][ \-\.\[\]\(\)])(?![b]it)(?![^\t\r\n]{0,}?((第[\d〇零一二三四五六七八九十]{1,})|([Ss]\d{1,}))))|([Ss第]((\d{1,})|([〇零一二三四五六七八九十]{1,5}[季部]))[^ \-\.\(\)\[\]\{\}\t\r\n]{0,})|((([Ss]pecial[s]{0,1}|[Ee]xtra[s]{0,1}|[Ss][Pp]|特[别別典][篇编編片]{0,1})|([Tt]railer[s]{0,1}|[Cc][Mm]|[Pp][Vv]|[预預予][告][篇编編片]{0,1})|([Oo][Pp]|片[頭头]曲{0,1})|([Ee][Dd]|片尾曲{0,1}))(([ \-\.]{0,3}\d{1,3})|)(?=[ \-\.\[\]\(\)]{0,}?((\d{4})|(\d{3,4}[pPiIkK])|([34][dD])|([hHxX][\-\.]{0,1}26[45])|(\-[ \.])|(\[)|(DVD|HDTV|((WEB|[^ \-\.\(\)\[\]\{\}\t\r\n]{0,})([\-]{0,1}DL|[Rr]ip))|BD[Rr]ip|[Bb]lu[e\-]{0,2}[Rr]ay)|(((avi)|(flv)|(mpg)|(mp4)|(mkv)|(rm)|(rmvb)|(ts)|(wmv))$)|$))))([^\t\r\n]{0,})$]]
     -- 特别篇所在季序数: regex: (S01)...
-    local patternSpSeason=[[^.{0,}?([Ss]|第)(\d{1,}|[〇零一二三四五六七八九十]{1,5}(?=[季部第])).{0,}$]]
-    local patternSpSp=[[.{0,}?([Ss]pecial[s]{0,1}|[Ee]xtra[s]{0,1}|[Ss][Pp]|特[别別典][篇编編片]{0,1}).{0,}]]
-    local patternSpTr=[[.{0,}?([Tt]railer[s]{0,1}|[Cc][Mm]|[Pp][Vv]|[预預予][告][篇编編片]{0,1}).{0,}]]
-    local patternSpOp=[[.{0,}([Oo][Pp]|片[頭头]曲{0,1}).{0,}]]
-    local patternSpEd=[[.{0,}?([Ee][Dd]|片尾曲{0,1}).{0,}]]
+    local patternSpSeason=[[((?<=^)|(.{0,}?(?<=[ \-\.\[\]\(\)])))([Ss]|第)(\d{1,}|([〇零一二三四五六七八九十]{1,5}(?=[季部第]))).{0,}$]]
+    local patternSpSp=[[((?<=^)|(.{0,}?(?<=[ \-\.\[\]\(\)])))([Ss]pecial[s]{0,1}|[Ee]xtra[s]{0,1}|[Ss][Pp]|特[别別典][篇编編片]{0,1})(?=($|([ \-\.\[\]\(\)].{0,})))]]
+    local patternSpTr=[[((?<=^)|(.{0,}?(?<=[ \-\.\[\]\(\)])))([Tt]railer[s]{0,1}|[Cc][Mm]|[Pp][Vv]|[预預予][告][篇编編片]{0,1})(?=($|([ \-\.\[\]\(\)].{0,})))]]
+    local patternSpOp=[[((?<=^)|(.{0,}?(?<=[ \-\.\[\]\(\)])))([Oo][Pp]|片[頭头]曲{0,1})(?=($|([ \-\.\[\]\(\)].{0,})))]]
+    local patternSpEd=[[((?<=^)|(.{0,}?(?<=[ \-\.\[\]\(\)])))([Ee][Dd]|片尾曲{0,1})(?=($|([ \-\.\[\]\(\)].{0,})))]]
 
     -- 仅标题 regex: (Title)(-)()...
-    local patternNum=[[^([^\t\r\n]{0,}?)([ \-\.\[\]\(\)]{1,3})(\d{1,3}(?=[ \-\.\[\]\(\)]{1,3})|([Ss第](\d{1,}|[〇零一二三四五六七八九十]{1,5}[季部])[ \-\.]{0,3}[^ \-\.\(\)\[\]\{\}\t\r\n]{0,})|)(?=([ \-\.\[\]\(\)]{0,3})((\d{4})|(\d{3,4}[pPiIkK])|([34][dD])|([hHxX][\-\.]{0,1}26[45])|(-[ \.])|(\[)|(DVD|HDTV|(WEB|[^ \-\.\(\)\[\]\{\}\t\r\n]{0,})([\-]{0,1}DL|[Rr]ip)|BD[Rr]ip|[Bb]lu\-{0,1}[Rr]ay)|((avi|flv|mpg|mp4|mkv|rm|rmvb|ts|wmv)$)))([^\t\r\n]{0,})$]]
+    local patternNum=[[^([^\t\r\n]{0,}?)([ \-\.\[\]\(\)]{1,3})(\d{1,3}(?=[ \-\.\[\]\(\)]{1,3})|([Ss第](\d{1,}|[〇零一二三四五六七八九十]{1,5}[季部])[ \-\.]{0,3}[^ \-\.\(\)\[\]\{\}\t\r\n]{0,}?)|)(?=([ \-\.\[\]\(\)]{0,3})((\d{4})|(\d{3,4}[pPiIkK])|([34][dD])|([hHxX][\-\.]{0,1}26[45])|(\-[ \.])|(\[)|(\d{1,2}[Bb]it)|(DVD|HDTV|(WEB|[^ \-\.\(\)\[\]\{\}\t\r\n]{0,})([\-]{0,1}DL|[Rr]ip)|BD[Rr]ip|[Bb]lu\-{0,1}[Rr]ay)|((avi|flv|mpg|mp4|mkv|rm|rmvb|ts|wmv)$)))([^\t\r\n]{0,})$]]
 
     -- 普通集: filename->ResultRaw
     resTS=string.split(kiko.regex(patternSE,"i"):gsub(filename,"\\1\t\\3"),"\t")
@@ -4414,17 +4519,17 @@ function Path.getMediaInfoRawByFilename(filename)
             table.insert(resTS,"") -- 补全长度
         end
         -- 仅数字的集: SeasonEpRaw->SeasonEpInfo
-        resSext=string.split(kiko.regex(patternSENum,"i"):gsub(resTS[2],"\\2\t\\4\t\\6"),"\t")
+        resSext=string.split(kiko.regex(patternSENum,"i"):gsub(resTS[2],"\\2\t\\4\t\\6\t\\7"),"\t")
         -- resSext=string.split(kiko.regex(patternSENum,"i"):gsub(resTS[2],"\\2\t\\4\t\\6"),"\t")
         if resSext[1] ~= resTS[2] then
             -- 补全 TitleExt
-            Array.extend(resSext,{"",""})
+            Array.extend(resSext,{""})
         else
             -- 含中文数字的集
-            resSext=string.split(kiko.regex(patternSEZh,"i"):gsub(resTS[2],"\\2\t\\5\t\\7"),"\t")
+            resSext=string.split(kiko.regex(patternSEZh,"i"):gsub(resTS[2],"\\2\t\\5\t\\7\t\\10"),"\t")
             -- resSext=string.split(kiko.regex(patternSEZh,"i"):gsub(resTS[2],"\\2\t\\4\t\\6"),"\t")
             if resSext[1] ~= resTS[2] then
-                Array.extend(resSext,{"",""})
+                Array.extend(resSext,{""})
             else
                 -- Other unrecognizable results
                 resSext={"","","",resTS[2],""}
@@ -4439,7 +4544,7 @@ function Path.getMediaInfoRawByFilename(filename)
                 table.insert(resTS,"")
             end
             -- 获取季序数
-            local sextSeasonNum=kiko.regex(patternSpSeason,"i"):gsub(resTS[2],[[\2]])
+            local sextSeasonNum=kiko.regex(patternSpSeason,"i"):gsub(resTS[2],[[\4]])
             if sextSeasonNum == resTS[2] then
                 sextSeasonNum=""
             end
@@ -4453,11 +4558,11 @@ function Path.getMediaInfoRawByFilename(filename)
             if resTS[2] ~= kiko.regex(patternSpSp,"i"):gsub(resTS[2],[[\1\1]]) then
                 sextEpType="SP"
             elseif resTS[2] ~= kiko.regex(patternSpTr,"i"):gsub(resTS[2],[[\1\1]]) then
-                    sextEpType="TR"
+                sextEpType="TR"
             elseif resTS[2] ~= kiko.regex(patternSpOp,"i"):gsub(resTS[2],[[\1\1]]) then
-                        sextEpType="OP"
+                sextEpType="OP"
             elseif resTS[2] ~= kiko.regex(patternSpEd,"i"):gsub(resTS[2],[[\1\1]]) then
-                            sextEpType="ED"
+                sextEpType="ED"
             else
                 sextEpType="OT"
             end
@@ -4470,12 +4575,22 @@ function Path.getMediaInfoRawByFilename(filename)
                 table.insert(resTS,"")
             end
             -- 获取 季序数
-            local sextSeasonNum=kiko.regex(patternSpSeason,"i"):gsub(resTS[2],[[\2]])
+            local sextSeasonNum=kiko.regex(patternSpSeason,"i"):gsub(resTS[2],[[\4]])
             local sextEpType="" -- 如果有季序数 集类型为Others
             if sextSeasonNum == resTS[2] then
                 sextSeasonNum=""
                 sextEpType=""
-            else sextEpType="OT"
+            -- 特别篇 预告片 片头/OP 片尾/ED 其他
+            elseif resTS[2] ~= kiko.regex(patternSpSp,"i"):gsub(resTS[2],[[\1\1]]) then
+                sextEpType="SP"
+            elseif resTS[2] ~= kiko.regex(patternSpTr,"i"):gsub(resTS[2],[[\1\1]]) then
+                sextEpType="TR"
+            elseif resTS[2] ~= kiko.regex(patternSpOp,"i"):gsub(resTS[2],[[\1\1]]) then
+                sextEpType="OP"
+            elseif resTS[2] ~= kiko.regex(patternSpEd,"i"):gsub(resTS[2],[[\1\1]]) then
+                sextEpType="ED"
+            else
+                sextEpType="OT"
             end
             -- 获取 集序数
             local sextEpNum=""
@@ -4532,9 +4647,10 @@ function Path.getMediaInfoRawByFilename(filename)
     end
     tmpLogPrint=tmpLogPrint..res[1]
     kiko.log("Finished getting media info RAW by filename.\n" ..
-        "Season\tEp\tEpExt\tTitleExt\tEpType\tTitle:\t"..tmpLogPrint)
+        "Season\tEp\tEpExt\tEpInfo\tEpType\tTitle:\t"..tmpLogPrint)
     return res
 end
+
 -- 读 xml 文本文件
 -- path_xml:video.nfo|file_nfo -> kiko.xmlreader:xml_file_nfo
 -- 拓展名 .nfo，内容为 .xml 格式

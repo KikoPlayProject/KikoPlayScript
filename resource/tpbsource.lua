@@ -7,7 +7,8 @@ info = {
     ["id"] = "Kikyou.r.TPBsource",
     ["desc"] = "TPBsource 资源信息脚本（测试中，不稳定）  Edited by: anonymous\n"..-- Edited by: anonymous
                 "从 thePirateBay 刮削媒体资源信息。",
-    ["version"] = "0.0.03", -- 0.0.03.220801_build
+    ["version"] = "0.0.05", -- 0.0.05.230325_build
+    ["min_kiko"] = "0.9.1",
 }
 
 -- 设置项
@@ -18,6 +19,7 @@ settings = {
         ["desc"] = "[必填项] 填写 `thePirateBay` 的域名，通常请不要带`https://`、`/`等字符，\n"..
                     "适用于其搜索页网址形如 [https://域名/search/搜索关键词/页码/排序/类别] 的。\n"..
                     "`tpb.party`：网址 [https://tpb.party/search/搜索关键词/1/3/0] 为其搜索页 (默认)。",
+        ["group"]="网址",
     },
     -- ["aname_website_alias2"] = {
     --     ["title"] = "网址 - TPB域名格式2",
@@ -26,6 +28,7 @@ settings = {
     --                 "适用于其搜索页网址形如 [https://域名/search?q=搜索关键词] 的。\n"..
     --                 "注意：只有`网址 - TPB域名`不填写时才会采用此设置项。\n"..
     --                 "`thepiratebaya.org`：网址 [https://thepiratebaya.org/search?q=搜索关键词] 为其搜索页 (默认)。",
+    --     ["group"]="网址",
     -- },
     ["list_filter_category"] = {
         ["title"] = "限定 - 资源所属类别",
@@ -39,6 +42,7 @@ settings = {
         ["choices"]="0,100,101,102,103,104,199,200,201,202,203,204,205,206,207,208,209,299"..
                     ",300,301,302,303,304,305,306,399,400,401,402,403,404,405,406,407,408,499"..
                     ",500,501,502,503,504,505,506,599,600,601,602,603,604,605,699", -- 
+        ["group"]="限定",
     },
     ["list_filter_orderby"] = {
         ["title"] = "限定 - 资源排序方式",
@@ -48,6 +52,7 @@ settings = {
                     "`3`/`4`：按 上传时间([t]ime) 降序新旧/升序。\t`5`/`6`：按 文件大小(si[z]e) 降序/升序。 \n"..
                     "`7`/`8`：按 做种节点数([s]eeder(s)/) 降序/升序。 `9`/`10`：按 吸血节点数(leecher(s)) 降序/升序。 ", -- "`11`/`12`：按 上传者昵称(uploader) 降序/升序。 \n"..
         ["choices"]="1,2,3,4,5,6,7,8,9,10,11,12,13,14",
+        ["group"]="限定",
     },
     ["list_filter_qtext"] = {
         ["title"] = "限定 - 关键词限定",
@@ -57,6 +62,7 @@ settings = {
                     "以下为与上例`$filter=3/200`同义的限定词： `$filter=time_desc/video`、`$filter:t-/v`等。\n"..
                     "`plain`：所有输入仅作为普通关键词。 `filter`：识别形如`$filter=0/7$`的限定 (默认)。 ", -- "`11`/`12`：按 上传者昵称 降序/升序。 \n"..
         ["choices"]="plain,filter",
+        ["group"]="限定",
     },
 }
 
@@ -66,19 +72,65 @@ scriptmenus = {
     {["title"]="关于", ["id"]="display_dialog_about"},
 }
 
+searchsettings = {
+    ["list_filter_i07_qtext"] = {
+        ["title"] = "限定：",
+        -- ["default"] = "filter",
+        ["desc"] = "在搜索的关键词后加上形如 `$filter=排序编号/类别编号$` 的文本来限定资源列表搜索，即以字符'$'分隔关键词和限定词\n"..
+                    "例如输入 `HEVC Bluray $filter=3/200`，即为 搜索`x265 Bluray`的视频、列表按上传时间由新到旧排列。\n"..
+                    "以下为与上例`$filter=3/200`同义的限定词： `$filter=time_desc/video`、`$filter:t-/v`等。\n"..
+                    "识别形如`$filter=0/7$`的限定 (`限定 - 关键词限定`的默认设置)。 ", -- "`11`/`12`：按 上传者昵称 降序/升序。 \n"..
+        -- ["choices"]="plain,filter",
+        ["save"]=false,
+        ["display_type"] = 5,
+    },
+    ["list_filter_i23_orderby"] = {
+        ["title"] = "排序",
+        ["default"] = "默认",
+        ["desc"] = "限定资源列表搜索按此排序资源。 降序:从大到小(desc/-/)；升序:从小到大(asc/+) `7`：做种节点数 由多到少。\n"..
+                    "`1`/`2`：按 标题(name) 降序ZA/升序。\t`13`/`14`：按 类型(category) 降序/升序。 \n"..
+                    "`3`/`4`：按 上传时间([t]ime) 降序新旧/升序。\t`5`/`6`：按 文件大小(si[z]e) 降序/升序。 \n"..
+                    "`7`/`8`：按 做种节点数([s]eeder(s)/) 降序/升序。 `9`/`10`：按 吸血节点数(leecher(s)) 降序/升序。 ", -- "`11`/`12`：按 上传者昵称(uploader) 降序/升序。 \n"..
+        ["choices"]="默认,标题降序,标题升序,时间降序,时间升序,大小降序,大小升序,做种数降序,做种数升序,吸血数降序,吸血数升序,上传者降序,上传者升序,类别降序,类别升序",
+        ["save"]=true,
+        ["display_type"] = 1,
+    },
+    ["list_filter_i33_category"] = {
+        ["title"] = "类别",
+        ["default"] = "默认",
+        ["desc"] = "限定资源列表搜索 只属于此类别的资源。   `0`：所有(all/x/)。\n"..
+                    "`100` 音频(audio)：`101` 音乐、`102` 有声书、`103` 声音片段、`104` 无损音频、`199` 其他音频。\n"..
+                    "`200` 视频([v]ideo)：`201` 电影、`202` 电影(DVD压制)、`203` MV/音乐视频(mv)、`204` 电影片段、`205` 剧集、`206` 手持设备、`207` 电影(高清)、`208` 剧集(高清)、`209` 3D视频(3d)、`299` 其他视频。\n"..
+                    "`300` 应用([app]lication)：`301` Windows、`302` Mac、`303` UNIX、`304` 手持设备、`305` IOS (iPad/iPhone)、`306` Android、`399` 其他系统下的应用。\n"..
+                    "`400` 游戏([g]ame)：`401` PC、`402` Mac、`403` PSx、`404` XBOX360、`405` Wii、`406` 手持设备、`407` IOS (iPad/iPhone)、`408` Android、`499` 其他游戏。\n".. -- `500` 淫秽：`501` 电影、`502` 电影(DVD压制)、`503` 图像、`504` 游戏、`505` 电影(高清)、`506` 电影片段、`599` 其他。\n"
+                    "`600` 其他(other(s))：`601` 电子书、`602` 漫画(comic(s))、`603` 图像、`604` 封面、`605` 3D打印模型、`699` 其他。",
+        ["choices"]="默认,所有,音频,视频,应用,游戏,视频MV,视频3D,漫画,电子书,0,100,101,102,103,104,199,200,201,202,203,204,205,206,207,208,209,299"..
+                    ",300,301,302,303,304,305,306,399,400,401,402,403,404,405,406,407,408,499"..
+                    ",500,501,502,503,504,505,506,599,600,601,602,603,604,605,699", -- 
+        ["save"]=true,
+        ["display_type"] = 1,
+    },
+}
+
 Filter_info ={
+    ["order"]={ ["name"]="1", ["time"]="3", ["size"]="5", ["uploader"]="11", ["category"]="13",
+                ["title"]="1", ["seeders"]="7", ["leechers"]="9", ["seeder"]="7", ["leecher"]="9",
+                ["标题"]="1", ["时间"]="3", ["大小"]="5", ["做种节点"]="7", ["吸血节点"]="9", ["上传者"]="11", ["目录"]="13",
+                [""]="7", ["t"]="3", ["z"]="5", ["s"]="7",
+    },
     ["category"]={ ["all"]="0", ["audio"]="100", ["video"]="200", ["application"]="300", ["game"]="400",
                 ["audios"]="100", ["videos"]="200", ["applications"]="300", ["games"]="400", ["others"]="600", ["adults"]="500",
                 ["app"]="300", ["apps"]="300", ["other"]="600", ["adult"]="500", ["porn"]="500", ["porns"]="500",
                 [""]="0", ["x"]="0", ["v"]="200", ["g"]="400", ["mv"]="203", ["3D"]="209", ["comics"]="602", ["comic"]="602",
+                ["所有"]="0", ["音频"]="100", ["视频"]="200", ["应用"]="300", ["游戏"]="400", ["成人"]="500", ["视频MV"]="203", ["视频3D"]="209", ["漫画"]="602", ["电子书"]="601",
     },
-    ["order"]={ ["name"]="1", ["time"]="3", ["size"]="5", ["uploader"]="11", ["category"]="13",
-                ["title"]="1", ["seeders"]="7", ["leechers"]="9", ["seeder"]="7", ["leecher"]="9",
-                [""]="7", ["t"]="3", ["z"]="5", ["s"]="7",
+    ["ascdesc"]={ ["asc"]="1", ["desc"]="0", [""]="0", ["+"]="1", ["-"]="0", ["升序"]="1", ["降序"]="0",
     },
-    ["ascdesc"]={ ["asc"]="1", ["desc"]="0", [""]="0", ["+"]="1", ["-"]="0",
+    ["orderby"]={["标题降序"]="1", ["时间降序"]="3", ["大小降序"]="5", ["做种数降序"]="7", ["吸血数降序"]="9", ["上传者降序"]="11", ["类别降序"]="13",
+                ["标题升序"]="2", ["时间升序"]="4", ["大小升序"]="6", ["做种数升序"]="8", ["吸血数升序"]="10", ["上传者升序"]="12", ["类别升序"]="14",
     },
 }
+Datetime={}
 
 -- (() and{} or{})[1]
 
@@ -87,7 +139,7 @@ Filter_info ={
 -- copy (as template) from & thanks to "../resource/comicat.lua" in "KikoPlay/resource"|KikoPlayScript
 --
 
-function search(keyword,page)
+function search(keyword,page,scene,options)
     --kiko_HttpGet arg:
     --  url: string
     --  query: table, {["key"]=value} value: string
@@ -102,10 +154,23 @@ function search(keyword,page)
     end
 
     local keywordPlain,listFilter = nil,nil
-    if settings["list_filter_qtext"]=="plain" then
+    local slf_category,slf_orderby,slf_qtext = nil,nil,nil
+    if scene == "auto-download" then
+        slf_category = settings["list_filter_category"]
+        slf_orderby = settings["list_filter_orderby"]
+        slf_qtext =settings["list_filter_qtext"]
+    elseif true or scene == "search" then
+        slf_category = ((string.isEmpty(options["list_filter_i33_category"]) or options["list_filter_i33_category"]=="默认")
+                and{settings["list_filter_category"]} or{Filter_info.category[options["list_filter_i33_category"]] or options["list_filter_i33_category"]})[1]
+        slf_orderby = ((string.isEmpty(options["list_filter_i23_orderby"]) or options["list_filter_i23_orderby"]=="默认")
+                and{settings["list_filter_orderby"]} or{Filter_info.orderby[options["list_filter_i23_orderby"]] or options["list_filter_i23_orderby"]})[1]
+        slf_qtext = ((string.isEmpty(options["list_filter_i07_qtext"]) or options["list_filter_qtext"]=="默认")
+                and{settings["list_filter_qtext"]} or{options["list_filter_i07_qtext"]})[1]
+    end
+    if slf_qtext=="plain" then
         keywordPlain= string.trim(keyword)
-        listFilter= settings["list_filter_orderby"] .."/"..settings["list_filter_category"]
-    elseif true or settings["list_filter_qtext"]=="filter" then
+        listFilter= slf_orderby .."/"..slf_category
+    elseif true or slf_qtext=="filter" then
         local keywordT= string.split(keyword,"$")
         for _,ktV in ipairs(keywordT) do
             local ktVp= string.gsub(ktV, "%s+","")
@@ -114,13 +179,13 @@ function search(keyword,page)
             local isSuccess=false
             if ktvFil~=nil and string.isEmpty(listFilter) then
                 local lfSettings={
-                    ["category"]= settings["list_filter_category"],
-                    ["orderby"]= settings["list_filter_orderby"],
-                    ["order"]= math.floor(tonumber(settings["list_filter_orderby"]) - (tonumber(settings["list_filter_orderby"]) -1) %2),
-                    ["ascdesc"]= math.floor((tonumber(settings["list_filter_orderby"]) -1) %2),
+                    ["category"]= slf_category,
+                    ["orderby"]= slf_orderby,
+                    ["order"]= math.floor(tonumber(slf_orderby) - (tonumber(slf_orderby) -1) %2),
+                    ["ascdesc"]= math.floor((tonumber(slf_orderby) -1) %2),
                 }
                 local ktvOir = nil
-                _,ktvOir,ktvOv = string.find(ktVp, ":([%d%a_%+%-]+)[/\\]?",ktvFir)
+                _,ktvOir,ktvOv = string.find(ktVp, "([%d%a_%+%-]+)[/\\]?",ktvFir)
                 ktvOv= string.gsub(ktvOv or "","[/\\]","")
                 for fioK,fioV in pairs(orderFp) do
                     if string.isEmpty(ktvOv) then
@@ -170,7 +235,7 @@ function search(keyword,page)
                     ktvOv= lfSettings.order
                     isSuccess= true
                 end
-                _,_,ktvCv = string.find(ktVp, "[/\\]([%d%a]+)",ktvOir or ktvFir)
+                _,_,ktvCv = string.find(ktVp, "([%d%a]+)",ktvOir or ktvFir)
                 isSuccess= false
                 if string.isEmpty(ktvCv) then
                     kiko.log("[WARN]  TPB.Search-Keyword.filter-category: Not found.")
@@ -211,8 +276,8 @@ function search(keyword,page)
             end
         end
         keywordPlain= (string.isEmpty(keywordPlain) and{""} or{keywordPlain})[1]
-        listFilter= (string.isEmpty(listFilter) and{settings["list_filter_orderby"]
-                .."/"..settings["list_filter_category"]} or{listFilter})[1]
+        listFilter= (string.isEmpty(listFilter) and{slf_orderby
+                .."/"..slf_category} or{listFilter})[1]
     end
     kiko.log("[INFO]  TPB: searching <"..keywordPlain.."> in filter <"..listFilter..">.")
 
@@ -226,6 +291,7 @@ function search(keyword,page)
     end
     local content = reply["content"]
 
+    local os_time = os.time()
     local _,_,pageLx,pageRx,totalCount=string.find(content,"<span>Search results:%s*[^<]*</span>&nbsp;Displaying hits from (%d+) to (%d+) %(approx (%d+) found%)")
     if pageLx==nil or pageRx==nil or totalCount==nil then
         error("[ERROR] TPB.webPage.decode: None of page index / total count is found.")
@@ -240,7 +306,7 @@ function search(keyword,page)
     kiko.log("[INFO]  ".. (totalCount or "0") .." items on <".. keyword .."> are found, showing index ".. pageLx .."~".. pageRx ..".")
 
     local patternF,kregexF = nil,nil
-    patternF=[[(?<=</thead>)\s*(<tr>[\s\S]+</tr>)\s*(?=<tr><td colspan="9" style="text-align:center;">)]]
+    patternF=[[(?<=</thead>)\s*(<tr>[\s\S]+</tr>)\s*(?=</table>)]]
     kregexF = kiko.regex(patternF,"i")
     local spos,epos,_= kregexF:find(content)
     if spos==nil then
@@ -254,6 +320,7 @@ function search(keyword,page)
         patternF= [[<div class="[^"]*">\s*<a href="([^"]*)" class="[^"]*" title="[^"]*">([^"]*)</a>]]
         kregexF = kiko.regex(patternF,"i")
         _,lnpos,url,title= kregexF:find(content,lnpos)
+        if lnpos==nil then break end
         patternF= [[<a href="(magnet:?[^"]*)" title=]]
         kregexF = kiko.regex(patternF,"i")
         _,lnpos,magnet= kregexF:find(content,lnpos)
@@ -261,8 +328,44 @@ function search(keyword,page)
         kregexF = kiko.regex(patternF,"i")
         _,lnpos,time,size,uploader= kregexF:find(content,lnpos)
         title= string.unescape(title)
-        time= string.gsub(time or "", "(%d*)%-(%d*)&nbsp;(%d*)", "%3-%1-%2") -- 01-06&nbsp;2020
         size= string.gsub(size or "", "(%d*%.?%d*)&nbsp;([IiBbKkMmGgTtPp]*)", "%1 %2") -- 667.49&nbsp;MiB
+        time= string.gsub(time or "", "&nbsp;", " ")
+        time= string.gsub(time or "", "<b>", "")
+        time= string.gsub(time or "", "</b>", "")
+        time= string.gsub(time or "", "(%d*)%-(%d*) (%d*)$", "%3-%1-%2") -- 01-06&nbsp;2020
+        local thour,tmin = nil,nil
+        thour,tmin = string.match(time or ""," (%d*):(%d*)$")
+        if (tonumber(thour) ~= nil and tonumber(thour) ~= nil) then
+            local tdays,tmins,tz_total_min,sdday = nil,nil,nil,nil,nil
+            tz_total_min = math.floor(tonumber(string.sub(os.date("%z",os_time) or"",1,3)) or 0) *60 +
+                math.floor(tonumber(string.sub(os.date("%z",os_time) or"",4,5)) or 0)
+                - 1 * 60 -- TODO: TPB并非世界时的时刻，相差1h，原因未知
+            
+            local t_ymd= string.gsub(time or "", "^(%d*)%-(%d*) ", os.date("%Y",os_time - tz_total_min *60).."-%1-%2 ") -- 01-06&nbsp;20:20
+            if(t_ymd~=nil) then
+                local t_stamp = Datetime.strToStamp(string.format("%sT%s:00Z%s",t_ymd, string.match(time, "%d*:%d*"),
+                                    string.format("%+03d:%02d",math.floor(tz_total_min/60),math.floor(tz_total_min%60))))
+                time= string.gsub(time or "", "^%d*%-%d* %d*:%d*", os.date("%Y-%m-%d %H:%M",t_stamp)) -- Today&nbsp;02:59
+            
+            end
+            tmins = math.floor(tonumber(thour)) *60 + math.floor(tonumber(tmin)) + tz_total_min
+            thour = math.floor(tmins/60%24)
+            tmin = math.floor(tmins%60)
+            -- tday = math.floor(tmins/60/24)
+            tdays = nil
+            tdays = ((string.match(time or "","Y%-day")) and{-1} or{tdays})[1]
+            tdays = ((string.match(time or "","Today")) and{0} or{tdays})[1]
+            if(tdays ~= nil) then
+                sdday = os.date("%Y-%m-%d",os_time - tz_total_min *60 + tdays *3600*24)
+                time= string.gsub(time or "", "Y%-day %d*:%d*", string.format("%s %02d:%02d", sdday, thour, tmin)) -- Y-day&nbsp;02:59
+                time= string.gsub(time or "", "Today %d*:%d*", string.format("%s %02d:%02d", sdday, thour, tmin)) -- Today&nbsp;02:59
+            end
+        end
+        local n_minsago,sdt_minsago = tonumber(string.match(time or "", "(%d*) mins* ago")), ""
+        if n_minsago ~= nil then
+            sdt_minsago = os.date("%Y-%m-%d %H:%M",os_time - n_minsago *60)
+        end
+        time= string.gsub(time or "", "(%d*) mins* ago", sdt_minsago) -- 20&nbsp;mins&nbsp;ago
 
         table.insert(itemsList,{
             ["title"]=title,
@@ -452,4 +555,33 @@ function table.deepCopy(tb)
     -- 设置元表。
     setmetatable(copy, table.deepCopy(getmetatable(tb)) or{})
     return copy
+end
+
+--* (string)str :: "2022-03-01T07:00:00-05:00" -> timestamp
+function Datetime.strToStamp(input)
+    local dateTa={}
+    local secZdt=0
+    -- if isFromLocal==nil then isFromLocal=false end
+
+    local p_stamp = os.time()
+    local timezone = (math.floor(tonumber(string.sub(os.date("%z",os.time()) or"",1,3)) or 0)) *3600 +
+                    (math.floor(tonumber(string.sub(os.date("%z",os.time()) or"",4,5)) or 0)) *60
+    if string.isEmpty(input) then
+        return p_stamp
+    else
+        local dataTap= os.date("*t",p_stamp)
+        dateTa={
+            ["year"]= math.floor(tonumber(string.sub(input,1,4) or"") or tonumber(dataTap.year) or 2022),
+            ["month"]= math.floor(tonumber(string.sub(input,6,7) or"") or 1),
+            ["day"]= math.floor(tonumber(string.sub(input,9,10) or"") or 1),
+            ["hour"]= math.floor(tonumber(string.sub(input,12,13) or"") or 0),
+            ["min"]= math.floor(tonumber(string.sub(input,15,16) or"") or 0),
+            ["sec"]= math.floor(tonumber(string.sub(input,18,19) or"") or 0),
+        }
+        secZdt= ((tonumber(string.sub(input,20,22) or"") or tonumber(string.sub(input,24,25) or""))
+                and{    math.floor(tonumber(string.sub(input,20,22) or"") or 0)*3600 +
+                        math.floor(tonumber(string.sub(input,24,25) or"") or 0)*60 }
+                or{timezone})[1]
+    end
+    return os.time(dateTa) -secZdt +timezone
 end
