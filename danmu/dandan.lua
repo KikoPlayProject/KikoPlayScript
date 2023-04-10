@@ -2,7 +2,16 @@ info = {
     ["name"] = "Dandan",
     ["id"] = "Kikyou.d.Dandan",
 	["desc"] = "弹弹Play弹幕脚本",
-	["version"] = "0.2"
+	["version"] = "0.3"
+}
+
+settings = {
+    ["withRelated"] = {
+        ["title"] = "获取全部弹幕",
+        ["desc"] = "获取全部来源的弹幕（包含弹弹之外的来源）",
+        ["default"] = "n",
+        ["choices"] = "y,n"
+    }
 }
 
 function string.split(str, sep)
@@ -71,8 +80,12 @@ function epinfo(source)
 end
 
 function danmu(source)
+    local query = {}
     local danmuUrl = "https://api.dandanplay.net/api/v2/comment/" .. source["data"]
-    local err, reply = kiko.httpget(danmuUrl, {}, {["Accept"]="application/json"})
+    if settings["withRelated"] == 'y' then
+        query["withRelated"] = "true"
+    end
+    local err, reply = kiko.httpget(danmuUrl, query, {["Accept"]="application/json"})
     if err ~= nil then error(err) end
     local danmuContent = reply["content"]
 
