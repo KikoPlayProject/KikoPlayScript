@@ -2,7 +2,7 @@ info = {
     ["name"] = "Bangumi",
     ["id"] = "Kikyou.l.Bangumi",
 	["desc"] = "Bangumi脚本，从bgm.tv中获取动画信息",
-	["version"] = "0.2",
+	["version"] = "0.3",
     ["min_kiko"] = "0.9.1"
 }
 
@@ -141,29 +141,39 @@ function getStaff(staffArray)
     if staffArray == nil then
         return ""
     end
-    local staffTable = {}
+    local jobstrs = {}
+    local invalidJos = Set({
+        "中文名", "别名", "话数", "放送开始", "放送星期", "IMDb", 
+    })
     for _, staff in pairs(staffArray) do
-        local jobs = staff["jobs"]
-        local _, sname =kiko.sttrans(staff["name"], true)
-        if jobs ~= nil then
-            for __, job in pairs(jobs) do
-                if staffTable[job] == nil then
-                    staffTable[job] = {}
-                end
-                table.insert(staffTable[job], sname)
-            end
+        local job = staff["key"]
+        if invalidJos[job] == nil then
+            table.insert(jobstrs,  job..":"..staff["value"])
         end
-    end
-    jobstrs = {}
-    for job, staffs in pairs(staffTable) do
-        local cj = job..":"..table.concat(staffs, " ")
-        table.insert(jobstrs, cj)
     end
     return table.concat(jobstrs, ";")
 end
 
-function getCrt(crtArray) 
+function getCrt(bgmId)
+    local query = {
+        ["responseGroup"]="medium",
+    }
+    local header = {
+        ["Accept"]="application/json"
+    }
+    local err, reply = kiko.httpget(string.format("https://api.bgm.tv/subject/%s", bgmId), query, header)
+    if err ~= nil then 
+        kiko.log(err)
+        return {}
+    end
+    local content = reply["content"]
+    local err, obj = kiko.json2table(content)
+    if err ~= nil then
+        kiko.log(err)
+        return {}
+    end
     local crts = {}
+    local crtArray = obj["crt"]
     if crtArray == nil then
         return crts
     end
@@ -194,7 +204,7 @@ function detail(anime)
     local header = {
         ["Accept"]="application/json"
     }
-    local err, reply = kiko.httpget(string.format("https://api.bgm.tv/subject/%s", bgmId), query, header)
+    local err, reply = kiko.httpget(string.format("https://api.bgm.tv/v0/subjects/%s", bgmId), query, header)
     if err ~= nil then error(err) end
     local content = reply["content"]
     local err, obj = kiko.json2table(content)
@@ -209,11 +219,11 @@ function detail(anime)
         ["data"]=bgmId,
         ["url"]=string.format("http://bgm.tv/subject/%s", bgmId),
         ["desc"]=obj["summary"],
-        ["airdate"]=obj["air_date"],
-        ["epcount"]=obj["eps_count"],
+        ["airdate"]=obj["date"],
+        ["epcount"]=obj["eps"],
         ["coverurl"]=obj["images"][settings["cover_quality"]],
-        ["staff"]=getStaff(obj["staff"]),
-        ["crt"]=getCrt(obj["crt"])
+        ["staff"]=getStaff(obj["infobox"]),
+        ["crt"]=getCrt(bgmId)
     }
     return anime
 end
