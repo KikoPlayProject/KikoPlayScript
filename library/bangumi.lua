@@ -290,7 +290,7 @@ function addLevelTags(tags, anime)
         ["动画工房"]="动画工房", 
         ["P.A.WORKS"]="P.A.WORKS", 
         ["Studio Pierrot"]="Studio Pierrot", 
-        ["Studio DEEN"]="Studio DEEN", 
+        ["Studio DEEN"]="Studio DEEN", ["STUDIO_DEEN"] = "Studio DEEN",
         ["TOEI"]="TOEI", 
         ["SUNRISE"]="SUNRISE", 
         ["TRIGGER"]="TRIGGER", 
@@ -365,7 +365,7 @@ end
 function tagFilter(tags, anime)
     local trivialTags = Set({
         "TV", "OVA", "OAD", "WEB", "日本", "季番", "动画", "日本动画", "未确定", "追番",
-        "佳作", "未上映", "未定档", "剧情", "TVA"
+        "佳作", "未上映", "未定档", "剧情", "TVA", "更多 +"
     })
     local nameTags = Set(getNames(anime))
     local containRemoveTags = {"OVA"}
