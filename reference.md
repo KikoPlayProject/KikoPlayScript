@@ -335,6 +335,20 @@ KikoPlay提供的API位于kiko表中，通过kiko.xxx调用
 
    发送HTTP POST请求。返回的第一个值表示是否发生错误，没有错误时为nil，否则是错误信息
 
+ - `httphead(url, query, header, redirect)`
+
+   > `url`：string
+   >
+   > `query`：查询，`{[key]=value,...}`，可选，默认为空
+   >
+   > `header`: HTTP Header, `{[key]=value,...}`，可选，默认为空
+   >
+   > `redirect`：bool，是否自动进行重定向，默认`true`
+   >
+   > 返回：string/nil, [NetworkReply](#networkreply)
+
+   发送HTTP Head请求。返回的第一个值表示是否发生错误，没有错误时为nil，否则是错误信息
+  
  - `json2table(jsonstr)`
 
    > `jsonstr`：string, json字符串
@@ -620,6 +634,80 @@ KikoPlay提供的API位于kiko表中，通过kiko.xxx调用
         print("gmatch: ", w)
     end
     ```
+1.0.0起增加了一些常用的字符串函数，位于`string`中：
+ - `trim(str)`
+   > `str`：string
+   >
+   > 返回： 去除`str`两边空白字符后的结果
+
+   去除字符串两边的空白。
+
+ - `startswith(str, token)`
+   > `str`：string
+   >
+   > `token`：string
+   >
+   > 返回： bool
+
+   判断`token`是否为`str`的前缀。
+
+ - `endswith(str, token)`
+   > `str`：string
+   >
+   > `token`：string
+   >
+   > 返回： bool
+
+   判断`token`是否为`str`的后缀。
+
+ - `split(str, token, skip_empty)`
+   > `str`：string
+   >
+   > `token`：string
+   >
+   > `skip_empty`：bool，可选，默认false
+   >
+   > 返回： array of string
+
+   将`str`按照`token`切分，如果`skip_empty=true`，忽略切分中产生的空字符串。
+
+ - `indexof(str, target, from)`
+   > `str`：string
+   >
+   > `target`：string
+   >
+   > `from`：integer，可选，默认从1开始
+   >
+   > 返回： integer
+
+   返回`target`在`str`中从`from`开始首次出现的位置，如果没有返回-1。
+
+ - `lastindexof(str, target, from)`
+   > `str`：string
+   >
+   > `target`：string
+   >
+   > `from`：integer，可选，默认从-1开始向前搜索
+   >
+   > 返回： integer
+
+   返回`target`在`str`中从`from`开始从后向前首次出现的位置，如果没有返回-1。
+
+ - `encode(str, src_code, dest_code)`
+   > `str`：string
+   >
+   > `src_code`：源编码
+   >
+   > `dest_code`：目标编码
+   >
+   > 返回： string
+
+    将`str`从源编码转为目标编码。编码目前有两种取值：
+    ```lua
+        string.CODE_LOCAL -- 本地编码
+        string.CODE_UTF8 -- utf-8编码
+    ```
+    
 ## 数据类型
 
 ### DanmuSource
