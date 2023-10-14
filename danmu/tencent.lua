@@ -145,7 +145,7 @@ function urlinfo(url)
     local err, reply = kiko.httpget(url)
     if err ~= nil then error(err) end
     local content = reply["content"]
-    local _, _, title = string.find(content, "<title>(.*)</title>")
+    local _, _, title = string.find(content, "<title>(.-)</title>")
     if title == nil then title = "unknown" end
 
     table.insert(results, {
