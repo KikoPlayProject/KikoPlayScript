@@ -1,21 +1,29 @@
 info = {
     ["name"] = "异世界动漫",
     ["id"] = "Kikyou.d.ysjdm",
-	["desc"] = "异世界动漫弹幕脚本，www.ysjdm.net",
-	["version"] = "0.2"
+	["desc"] = "异世界动漫弹幕脚本，www.mikudm.com",
+	["version"] = "0.3"
+}
+
+settings = {
+    ["latest_addr"] = {
+        ["title"] = "异世界动漫最新地址",
+        ["desc"] = "地址不要添加'http://'前缀",
+        ["default"] = "www.mikudm.com",
+    }
 }
 
 supportedURLsRe = {
-    "(https?://)?www\\.ysjdm\\.net/index.php/vod/(detail|play)/id/\\d+(/sid/\\d+/nid/\\d+)?.html"
+    "(https?://)?www\\.mikudm\\.com/index.php/vod/(detail|play)/id/\\d+(/sid/\\d+/nid/\\d+)?.html"
 }
 
 sampleSupporedURLs = {
-    "https://www.ysjdm.net/index.php/vod/detail/id/1417.html",
-    "https://www.ysjdm.net/index.php/vod/play/id/1559/sid/1/nid/1.html"
+    "https://www.mikudm.com/index.php/vod/detail/id/1417.html",
+    "https://www.mikudm.com/index.php/vod/play/id/1559/sid/1/nid/1.html"
 }
 
 function search(keyword)
-    local err, reply = kiko.httpget("https://www.ysjdm.net/index.php/vod/search.html", {["wd"]=keyword})
+    local err, reply = kiko.httpget(string.format("https://%s/index.php/vod/search.html", settings["latest_addr"]), {["wd"]=keyword})
     if err ~= nil then error(err) end
     local content = reply["content"]
     local parser = kiko.htmlparser(content)
@@ -27,7 +35,7 @@ function search(keyword)
         parser:readnext()
         parser:readnext()
         if parser:curnode()=="a" then
-            local data = { ["collection"] = "https://www.ysjdm.net/" .. parser:curproperty("href") }
+            local data = { ["collection"] = string.format("https://%s/", settings["latest_addr"]) .. parser:curproperty("href") }
             local _, data_str = kiko.table2json(data)
             table.insert(results, {
                 ["title"] = parser:curproperty("title"),
@@ -57,7 +65,7 @@ function epinfo(source)
         parser:readnext()
         while parser:curnode()=="li" and parser:start() do
             parser:readnext()
-            local data = { ["ep"] = "https://www.ysjdm.net/" .. parser:curproperty("href") }
+            local data = { ["ep"] = string.format("https://%s/", settings["latest_addr"]) .. parser:curproperty("href") }
             local _, data_str = kiko.table2json(data)
             table.insert(results, {
                 ["title"] = parser:readcontent(),
@@ -73,10 +81,10 @@ end
 
 function urlinfo(url)
     local pattens = {
-        ["https?://?www%.ysjdm%.net/index.php/vod/detail/id/%d+.html"] = "collection",
-        ["www%.ysjdm%.net/index.php/vod/detail/id/%d+.html"] = "collection",
-        ["https?://?www%.ysjdm%.net/index.php/vod/play/id/%d+/sid/%d+/nid/%d+.html"] = "ep",
-        ["www%.ysjdm%.net/index.php/vod/play/id/%d+/sid/%d+/nid/%d+.html"] = "ep",
+        ["https?://?" .. settings["latest_addr"] .. "/index.php/vod/detail/id/%d+.html"] = "collection",
+        [settings["latest_addr"] .. "/index.php/vod/detail/id/%d+.html"] = "collection",
+        ["https?://?" .. settings["latest_addr"] .. "/index.php/vod/play/id/%d+/sid/%d+/nid/%d+.html"] = "ep",
+        [settings["latest_addr"] .. "/index.php/vod/play/id/%d+/sid/%d+/nid/%d+.html"] = "ep",
     }
     local matched = nil
     for pv, k in pairs(pattens) do
@@ -158,7 +166,7 @@ function danmu(source)
     local video_url = player_info_obj["url"]
     if video_url == nil then error("视频信息解析失败: video_url") end
 
-    local err, reply = kiko.httpget("https://bf.sbdm.cc/m3u8.php", {["url"]=video_url}, {["Referer"]="http://ysjdm.net/"})
+    local err, reply = kiko.httpget("https://bf.sbdm.cc/m3u8.php", {["url"]=video_url}, {["Referer"]=string.format("https://%s/", settings["latest_addr"])})
     if err ~= nil then error(err) end
     local content = reply["content"]
     local _, _, dm_id = string.find(content, "\"id\"%s*:%s*\"(.-)\",")

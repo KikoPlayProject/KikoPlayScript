@@ -2,7 +2,8 @@ info = {
     ["name"] = "Bilibili",
     ["id"] = "Kikyou.d.Bilibili",
 	["desc"] = "Bilibili弹幕脚本",
-	["version"] = "0.2"
+	["version"] = "0.3",
+    ["min_kiko"] = "1.0.0"
 }
 
 supportedURLsRe = {
@@ -68,6 +69,7 @@ function search(keyword)
         for _, sobj in ipairs(bgmResult) do
             local data = {
                 ["media_id"] = string.format("%d", sobj["media_id"]),
+                ["season_id"] = string.format("%d", sobj["season_id"]),
                 ["stype"] = "collection"
             }
             local _, data_str = kiko.table2json(data)
@@ -100,48 +102,18 @@ end
 function epinfo(source)
     local err, source_obj = kiko.json2table(source["data"])
     if err ~= nil then error(err) end
-    if source_obj["stype"]=="collection" then
-        local query = { ["media_id"] = source_obj["media_id"] }
-        local header = { ["Accept"]="application/json" }
-        local err, reply = kiko.httpget("https://bangumi.bilibili.com/view/web_api/season", query, header)
-        if err ~= nil then error(err) end
-        local content = reply["content"]
-        local err, obj = kiko.json2table(content)
-        if err ~= nil then error(err) end
-        local results = {}
-        for _, bobj in ipairs(obj["result"]["episodes"]) do
-            local index = bobj["index"]
-            local title = bobj["index_title"]
-            local data = {
-                ["aid"] = string.format("%d", bobj["aid"]),
-                ["cid"] = string.format("%d", bobj["cid"]),
-                ["bvid"] = bobj["bvid"],
-                ["stype"] = "video"
-            }
-            local _, data_str = kiko.table2json(data)
-            local fTitle = string.format("%s-%s", index, title)
-            if title == nil or #title == 0 then
-                fTitle = index
-            end
-            table.insert(results, {
-                ["title"] = fTitle,
-                ["duration"] = bobj["duration"]/1000,
-                ["data"] = data_str
-            })
-        end
-        return results
-    elseif source_obj["stype"]=="collection_ss" then
+    if source_obj["stype"]=="collection" or source_obj["stype"]=="collection_ss" then
         local query = { ["season_id"] = source_obj["season_id"] }
         local header = { ["Accept"]="application/json" }
-        local err, reply = kiko.httpget("https://bangumi.bilibili.com/view/web_api/season", query, header)
+        local err, reply = kiko.httpget("https://api.bilibili.com/pgc/view/web/season", query, header)
         if err ~= nil then error(err) end
         local content = reply["content"]
         local err, obj = kiko.json2table(content)
         if err ~= nil then error(err) end
         local results = {}
         for _, bobj in ipairs(obj["result"]["episodes"]) do
-            local index = bobj["index"]
-            local title = bobj["index_title"]
+            local index = bobj["title"]
+            local title = bobj["long_title"]
             local data = {
                 ["aid"] = string.format("%d", bobj["aid"]),
                 ["cid"] = string.format("%d", bobj["cid"]),
@@ -163,15 +135,15 @@ function epinfo(source)
     elseif source_obj["stype"]=="collection_ep" then
         local query = { ["ep_id"] = source_obj["ep_id"] }
         local header = { ["Accept"]="application/json" }
-        local err, reply = kiko.httpget("https://bangumi.bilibili.com/view/web_api/season", query, header)
+        local err, reply = kiko.httpget("https://api.bilibili.com/pgc/view/web/season", query, header)
         if err ~= nil then error(err) end
         local content = reply["content"]
         local err, obj = kiko.json2table(content)
         if err ~= nil then error(err) end
         local results = {}
         for _, bobj in ipairs(obj["result"]["episodes"]) do
-            local index = bobj["index"]
-            local title = bobj["index_title"]
+            local index = bobj["title"]
+            local title = bobj["long_title"]
             local data = {
                 ["aid"] = string.format("%d", bobj["aid"]),
                 ["cid"] = string.format("%d", bobj["cid"]),
@@ -191,69 +163,34 @@ function epinfo(source)
         end
         return results
     elseif source_obj["stype"]=="video" then
-        local query = { ["appkey"] = "8e9fc618fbd41e28", ["id"] = source_obj["aid"] }
+        local query = {}
+        if source_obj["aid"] ~= nil then
+            query["aid"] = source_obj["aid"]
+        else
+            query["bvid"] = bvid
+        end
         local header = { ["Accept"]="application/json" }
-        local err, reply = kiko.httpget("https://api.bilibili.com/view", query, header)
+        local err, reply = kiko.httpget("http://api.bilibili.com/x/web-interface/view", query, header)
         if err ~= nil then error(err) end
         local content = reply["content"]
         local err, obj = kiko.json2table(content)
         if err ~= nil then error(err) end
-
+        local obj = obj["data"]
+        local aid = string.format("%d", obj["aid"])
         local results = {}
-        if obj["pages"] == 1 then
+        for _, bobj in ipairs(obj["pages"]) do
             local data = {
-                ["aid"] = source_obj["aid"],
-                ["cid"] = string.format("%d", obj["cid"]),
+                ["aid"] = aid,
+                ["cid"] = string.format("%d", bobj["cid"]),
+                ["bvid"] = bvid,
                 ["stype"] = "video"
             }
             local _, data_str = kiko.table2json(data)
             table.insert(results, {
-                ["title"] = obj["title"],
-                ["duration"] = source["duration"] or 0,
+                ["title"] = bobj["part"],
+                ["duration"] = bobj["duration"] or 0,
                 ["data"] = data_str
             })
-        else
-            local header = { ["User-Agent"]="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:62.0) Gecko/20100101 Firefox/62.0" }
-            local err, reply = kiko.httpget(string.format("https://www.bilibili.com/video/av%s", source_obj["aid"]), {}, header)
-            if err ~= nil then error(err) end
-            local content = reply["content"]
-            local _, _, json_data = string.find(content, "\"videoData\":(.*),\"upData\"")
-            if json_data ~= nil then 
-                local err, json_obj = kiko.json2table(json_data)
-                if err ~= nil then error(err) end
-                for _, bobj in ipairs(json_obj["pages"]) do
-                    local data = {
-                        ["aid"] = source_obj["aid"],
-                        ["cid"] = string.format("%d", bobj["cid"]),
-                        ["stype"] = "video"
-                    }
-                    local _, data_str = kiko.table2json(data)
-                    table.insert(results, {
-                        ["title"] = bobj["part"],
-                        ["duration"] = bobj["duration"],
-                        ["data"] = data_str
-                    })
-                end
-            else
-                local _, _, json_data = string.find(content, "\"epList\":(.*),\"newestEp\"")
-                if json_data ~= nil then
-                    local err, json_obj = kiko.json2table(json_data)
-                    if err ~= nil then error(err) end
-                    for _, bobj in ipairs(json_obj["pages"]) do
-                        local data = {
-                            ["aid"] = source_obj["aid"],
-                            ["cid"] = string.format("%d", bobj["cid"]),
-                            ["bvid"] = bobj["bvid"],
-                            ["stype"] = "video"
-                        }
-                        local _, data_str = kiko.table2json(data)
-                        table.insert(results, {
-                            ["title"] = bobj["index_title"],
-                            ["data"] = data_str
-                        })
-                    end
-                end
-            end
         end
         return results
     else
@@ -294,8 +231,18 @@ function urlinfo(url)
         })
     elseif matched == "bgm" then
         local _, _, bgmid = string.find(url, "md(%d+)")
+        local query = { ["media_id"] = bgmid }
+        local header = { ["Accept"]="application/json" }
+        local err, reply = kiko.httpget("https://api.bilibili.com/pgc/review/user", query, header)
+        if err ~= nil then error(err) end
+        local content = reply["content"]
+        local err, obj = kiko.json2table(content)
+        if err ~= nil then error(err) end
+        local obj = obj["result"]["media"]
+        local season_id = obj["season_id"]
+        if season_id == nil then error("invalid media_id") end
         return epinfo({
-            ["data"] = string.format("{\"media_id\":\"%s\", \"stype\": \"collection\"}", bgmid)
+            ["data"] = string.format("{\"season_id\":\"%s\", \"stype\": \"collection\"}", season_id)
         })
     elseif matched == "bgm_play_ss" then
         local _, _, bgmid = string.find(url, "ss(%d+)")
@@ -309,53 +256,10 @@ function urlinfo(url)
         })
     elseif matched == "bv" then
         local _, _, bvid = string.find(url, "(BV[%dA-Za-z]+)")
-        local query = { ["bvid"] = bvid }
-        local header = { ["Accept"]="application/json" }
-        local err, reply = kiko.httpget("http://api.bilibili.com/x/web-interface/view", query, header)
-        if err ~= nil then error(err) end
-        local content = reply["content"]
-        local err, obj = kiko.json2table(content)
-        if err ~= nil then error(err) end
-        local obj = obj["data"]
-        local aid = string.format("%d", obj["aid"])
-        local results = {}
-        for _, bobj in ipairs(obj["pages"]) do
-            local data = {
-                ["aid"] = aid,
-                ["cid"] = string.format("%d", bobj["cid"]),
-                ["bvid"] = bvid,
-                ["stype"] = "video"
-            }
-            local _, data_str = kiko.table2json(data)
-            table.insert(results, {
-                ["title"] = bobj["part"],
-                ["duration"] = bobj["duration"] or 0,
-                ["data"] = data_str
-            })
-        end
-        return results
+        return epinfo({
+            ["data"] = string.format("{\"bvid\":\"%s\", \"stype\": \"video\"}", bvid)
+        })
     end
-end
-
-function string.split(str, sep)
-    local pStart = 1
-    local nSplitIndex = 1
-    local nSplitArray = {}
-    while true do
-        local pEnd = string.find(str, sep, pStart)
-        if pEnd == pStart then
-            pStart = pEnd + string.len(sep)
-        else
-            if not pEnd then
-                nSplitArray[nSplitIndex] = string.sub(str, pStart, string.len(str))
-                break
-            end
-            nSplitArray[nSplitIndex] = string.sub(str, pStart, pEnd - 1)
-            pStart = pEnd + string.len(sep)
-            nSplitIndex = nSplitIndex + 1
-        end
-    end
-    return nSplitArray
 end
 
 function danmu(source)
