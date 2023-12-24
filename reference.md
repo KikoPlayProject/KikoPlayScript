@@ -707,6 +707,85 @@ KikoPlay提供的API位于kiko表中，通过kiko.xxx调用
         string.CODE_LOCAL -- 本地编码
         string.CODE_UTF8 -- utf-8编码
     ```
+1.0.1版本提供了一些操作文件和目录的函数，位于`kiko.dir`中：
+ - `function fileinfo(path)`
+   > `path`：string，路径
+   >
+   > 返回：table
+
+   获取文件或目录信息。
+
+ - `function exists(path)`
+   > `path`：string，路径
+   >
+   > 返回：true/false
+
+   文件或目录是否存在。
+
+ - `function mkpath(path)`
+   > `path`：string，路径
+   >
+   > 返回：true/false
+
+   创建目录。
+
+ - `function rmpath(path)`
+   > `path`：string，路径
+   >
+   > 返回：true/false
+
+   删除目录，需要目录为空。
+
+ - `function rename(old_path, new_path)`
+   > `old_path`：string，之前的路径
+   >
+   > `new_path`：string，新路径
+   >
+   > 返回：true/false
+
+   重命名文件/目录。
+
+ - `function syspath()`
+   > 返回：table，kv形式
+
+   获取系统路径。
+
+ - `function entrylist(path, namefilter, filter, sort)`
+   > `path`：string，路径
+   >
+   > `namefilter`：string，文件名过滤，可选
+   >
+   > `filter`：integer，过滤器，可选
+   >
+   > `sort`：integer，排序规则，可选
+   >
+   > 返回：array of string
+
+   获取`path`下的文件和目录。`namefilter`支持通配符，多个过滤规则用`;`隔开，它们是或的关系，例如："*.cpp;*.cxx;*.cc"。
+
+   `filter`类型如下，可用或组合：
+   ```lua
+    kiko.dir.FILTER_DIRS
+    kiko.dir.FILTER_ALL_DIRS
+    kiko.dir.FILTER_FILES
+    kiko.dir.FILTER_DRIVES
+    kiko.dir.FILTER_NO_SYMLINKS
+    kiko.dir.FILTER_NO_DOT
+    kiko.dir.FILTER_ALL_ENTRIES
+    kiko.dir.FILTER_HIDDEN
+   ```
+   `sort`类型如下，可用或组合：
+   ```lua
+    kiko.dir.SORT_NAME
+    kiko.dir.SORT_TIME
+    kiko.dir.SORT_SIZE
+    kiko.dir.SORT_TYPE
+    kiko.dir.SORT_NO
+    kiko.dir.SORT_DIR_FIRST
+    kiko.dir.SORT_DIR_LAST
+    kiko.dir.SORT_REVERSE
+    kiko.dir.SORT_IGNORE_CASE
+   ```
     
 ## 数据类型
 
