@@ -1,5 +1,5 @@
 # <img src="kikoplay.png" width=24 /> KikoPlay 脚本开发参考 
-2023.02 By Kikyou，本文档适用于KikoPlay 0.9.2及以上版本
+2023.12 By Kikyou，本文档适用于KikoPlay 1.0.1及以上版本
 
 ## 目录
  - [脚本类型](#脚本类型)
