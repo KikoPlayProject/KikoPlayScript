@@ -2,7 +2,7 @@ info = {
     ["name"] = "动画疯",
     ["id"] = "Kikyou.d.Gamer",
 	["desc"] = "巴哈姆特动画疯弹幕脚本",
-	["version"] = "0.1.2"
+	["version"] = "0.1.3"
 }
 
 supportedURLsRe = {
@@ -24,11 +24,20 @@ settings = {
     },
 }
 
+scriptmenus = {
+    {["title"]="打开动画疯网站", ["id"]="open_gamer"}
+}
+
+function scriptmenuclick(menuid)
+    if menuid == "open_gamer" then
+        kiko.execute(true,  "cmd", {"/c", "start", "https://ani.gamer.com.tw/"})
+    end
+end
 
 function search(keyword)
     local _, tradKw = kiko.sttrans(keyword, false)
     local query = {
-        ["kw"]=tradKw
+        ["keyword"]=tradKw
     }
     local headers = {}
     if #settings["user_agent"] > 0 and #settings["cookie"] > 0 then

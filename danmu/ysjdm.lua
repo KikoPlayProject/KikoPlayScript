@@ -2,7 +2,7 @@ info = {
     ["name"] = "异世界动漫",
     ["id"] = "Kikyou.d.ysjdm",
 	["desc"] = "异世界动漫弹幕脚本，www.mikudm.com",
-	["version"] = "0.3"
+	["version"] = "0.3.1"
 }
 
 settings = {
@@ -110,7 +110,7 @@ function urlinfo(url)
 end
 
 function downloadDanmu(id)
-    local dm_url= "https://bf.sbdm.cc/dmku/"
+    local dm_url= "https://bf.mmiku.net/dmku/"
     local err, reply = kiko.httpget(dm_url, {["ac"]="get", ["id"]=id})
     if err ~= nil then error(err) end
     local err, obj = kiko.json2table(reply["content"]) 
@@ -166,7 +166,7 @@ function danmu(source)
     local video_url = player_info_obj["url"]
     if video_url == nil then error("视频信息解析失败: video_url") end
 
-    local err, reply = kiko.httpget("https://bf.sbdm.cc/m3u8.php", {["url"]=video_url}, {["Referer"]=string.format("https://%s/", settings["latest_addr"])})
+    local err, reply = kiko.httpget("https://bf.mmiku.net/m3u8.php", {["url"]=video_url}, {["Referer"]=string.format("https://%s/", settings["latest_addr"])})
     if err ~= nil then error(err) end
     local content = reply["content"]
     local _, _, dm_id = string.find(content, "\"id\"%s*:%s*\"(.-)\",")

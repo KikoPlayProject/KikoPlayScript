@@ -2,7 +2,7 @@ info = {
     ["name"] = "Bilibili",
     ["id"] = "Kikyou.d.Bilibili",
 	["desc"] = "Bilibili弹幕脚本",
-	["version"] = "0.3",
+	["version"] = "0.3.1",
     ["min_kiko"] = "1.0.0"
 }
 
@@ -167,7 +167,7 @@ function epinfo(source)
         if source_obj["aid"] ~= nil then
             query["aid"] = source_obj["aid"]
         else
-            query["bvid"] = bvid
+            query["bvid"] = source_obj["bvid"]
         end
         local header = { ["Accept"]="application/json" }
         local err, reply = kiko.httpget("http://api.bilibili.com/x/web-interface/view", query, header)

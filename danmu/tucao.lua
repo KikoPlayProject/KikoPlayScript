@@ -2,78 +2,60 @@ info = {
     ["name"] = "Tucao",
     ["id"] = "Kikyou.d.Tucao",
 	["desc"] = "Tucao弹幕脚本",
-	["version"] = "0.1"
+	["version"] = "0.2",
+    ["min_kiko"] = "1.0.0"
+}
+
+settings = {
+    ["latest_addr"] = {
+        ["title"] = "吐槽最新地址",
+        ["desc"] = "地址不要添加'https://'前缀",
+        ["default"] = "www.tucao.cool",
+    }
 }
 
 supportedURLsRe = {
-    "(https?://)?www\\.tucao\\.one/play/h[0-9]+(#[0-9]+)?/?"
+    "(https?://)?www\\.tucao\\.cool/play/h[0-9]+(#[0-9]+)?/?"
 }
 
 sampleSupporedURLs = {
-    "http://www.tucao.one/play/h4077044/"
+    "https://www.tucao.cool/play/h4077044/"
 }
-
-function string.split(str, sep)
-    local pStart = 1
-    local nSplitIndex = 1
-    local nSplitArray = {}
-    while true do
-        local pEnd = string.find(str, sep, pStart)
-        if pEnd == pStart then
-            pStart = pEnd + string.len(sep)
-        else
-            if not pEnd then
-                nSplitArray[nSplitIndex] = string.sub(str, pStart, string.len(str))
-                break
-            end
-            nSplitArray[nSplitIndex] = string.sub(str, pStart, pEnd - 1)
-            pStart = pEnd + string.len(sep)
-            nSplitIndex = nSplitIndex + 1
-        end
-    end
-    return nSplitArray
-end
 
 function search(keyword)
     local query = {
-        ["m"]="search",
-        ["a"]="init2",
-        ["time"]="all",
-        ["q"]=keyword
+        ["m"]="content",
+        ["c"]="search",
+        ["a"]="init",
+        ["catid"]="24",
+        ["dosubmit"]="1",
+        ["orderby"]="a.id+DESC",
+        ["info%5Btitle%5D"]=keyword
     }
-    local err, reply = kiko.httpget("http://www.tucao.one/index.php", query)
+    local err, reply = kiko.httpget(string.format("https://%s/index.php", settings["latest_addr"]), query)
     if err ~= nil then error(err) end
     local content = reply["content"]
-    local start = string.find(content, "<div class=\"search_list\" style=\"border%-top:1px solid #eee;\">")
+    local start = string.find(content, "<div class=\"b\">")
     if start == nil then return {} end
 
     local parser = kiko.htmlparser(content)
     parser:seekto(start-1)
     
-    local curData, curTitle, curDesc = nil, nil, nil
     local results = {}
-    local isStart = false
     while not parser:atend() do
-        if parser:curproperty("class")=="blue" then
+        if parser:curproperty("class")=="t" then
             local href = parser:curproperty("href")
             local _, _, hid = string.find(href, "h(%d+)")
-            if hid ~= nil then
-                curData = hid
-                curTitle = parser:readcontent()
-            end
-        elseif parser:curproperty("class")=="d" then
-            curDesc = parser:readcontent()
-            if curData ~= nil and curTitle ~= nil and curDesc ~= nil then
+            local curTitle = parser:readcontent()
+            if hid ~= nil and curTitle ~= nil then
                 local data = {
-                    ["hid"] = curData,
+                    ["hid"] = hid,
                 }
                 local _, data_str = kiko.table2json(data)
                 table.insert(results, {
                     ["title"] = curTitle,
-                    ["desc"] = curDesc,
                     ["data"] = data_str
                 })
-                curData, curTitle, curDesc = nil, nil, nil
             end
         end
         parser:readnext()
@@ -84,11 +66,11 @@ end
 function epinfo(source)
     local err, source_obj = kiko.json2table(source["data"])
     if err ~= nil then error(err) end
-    local baseUrl = string.format("http://www.tucao.one/play/h%s/", source_obj["hid"])
+    local baseUrl = string.format("http://%s/play/h%s/", settings["latest_addr"], source_obj["hid"])
     local err, reply = kiko.httpget(baseUrl)
     if err ~= nil then error(err) end
     local content = reply["content"]
-    local _, _, epContent = string.find(content, "<ul id=\"player_code\" mid=\".-\"><li>(.-)</li><li>.-</li></ul>")
+    local _, _, epContent = string.find(content, "<ul style=\"display:none;\" id=\"player_code\" mid=\".-\"><li>(.-)</li><li>.-</li></ul>")
     local results = {}
     if epContent ~= nil then
         local eps = string.split(epContent, '|')
@@ -120,10 +102,10 @@ end
 
 function urlinfo(url)
     local pattens = {
-        ["https?://www%.tucao%.one/play/h%d+/?"]="hid",
-        ["www%.tucao%.one/play/h%d+/?"]="hid",
-        ["https?://www%.tucao%.one/play/h%d+#%d+/?"]="hindex",
-        ["www%.tucao%.one/play/h%d+#%d+/?"]="hindex",
+        ["https?://www%.tucao%.cool/play/h%d+/?"]="hid",
+        ["www%.tucao%.cool/play/h%d+/?"]="hid",
+        ["https?://www%.tucao%.cool/play/h%d+#%d+/?"]="hindex",
+        ["www%.tucao%.cool/play/h%d+#%d+/?"]="hindex",
     }
     local matched = nil
     for pv, k in pairs(pattens) do
@@ -163,7 +145,7 @@ function danmu(source)
         ["c"]="index",
         ["playerID"]=string.format("11-%s-1-%s", source_obj["hid"], source_obj["index"])
     }
-    local err, reply = kiko.httpget("http://www.tucao.one/index.php", query)
+    local err, reply = kiko.httpget(string.format("http://%s/index.php", settings["latest_addr"]), query)
     if err ~= nil then error(err) end
     local content = reply["content"]
 

@@ -2,7 +2,7 @@ info = {
     ["name"] = "爱奇艺",
     ["id"] = "Kikyou.d.Iqiyi",
 	["desc"] = "爱奇艺弹幕脚本",
-	["version"] = "0.1.1"
+	["version"] = "0.2"
 }
 
 supportedURLsRe = {
@@ -243,12 +243,12 @@ function danmu(source)
 
     local start = nil
     repeat
-        local pos, _, cvid = string.find(content, "playPageInfo%s-=%s-({\".-})")
+        local pos, _, cvid = string.find(content, "pageProps\":%s-({\".-})")
         if cvid ~= nil then
             start = pos
             break
         end
-        local pos, _, cvid = string.find(content, "playPageInfo%s-||%s-({\".-})")
+        local pos, _, cvid = string.find(content, "QiyiPlayerProphetData%s-||%s-({\".-})")
         if cvid ~= nil then
             start = pos
             break
@@ -276,6 +276,10 @@ function danmu(source)
     if err ~= nil then 
         kiko.log(playInfo)
         error(err)
+    end
+    obj = obj["videoInfo"]
+    if obj == nil then
+        error("视频信息解析失败")
     end
     source["title"] = obj["name"]
     if obj["subtitle"] ~= nil and not string.endsWith(source["title"], obj["subtitle"]) then
