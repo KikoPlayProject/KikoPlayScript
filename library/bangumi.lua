@@ -2,7 +2,7 @@ info = {
     ["name"] = "Bangumi",
     ["id"] = "Kikyou.l.Bangumi",
 	["desc"] = "Bangumi脚本，从bgm.tv中获取动画信息",
-	["version"] = "0.3",
+	["version"] = "0.3.1",
     ["min_kiko"] = "0.9.1"
 }
 
@@ -147,7 +147,7 @@ function getStaff(staffArray)
     })
     for _, staff in pairs(staffArray) do
         local job = staff["key"]
-        if invalidJos[job] == nil then
+        if invalidJos[job] == nil and type(staff["value"]) == "string" then
             table.insert(jobstrs,  job..":"..staff["value"])
         end
     end
@@ -281,16 +281,16 @@ function addLevelTags(tags, anime)
     local studios = {
         ["BONES"] = "BONES", 
         ["京都动画"] ="京都动画", ["京都アニメーション"]="京都动画", 
-        ["Madhouse"]="Madhouse", 
+        ["Madhouse"]="MADHouse", ["MADHouse"] = "MADHouse",
         ["A-1 Pictures"]="A-1 Pictures", ["A-1Pictures"]="A-1 Pictures", ["A-1_Pictures"]="A-1 Pictures",
         ["J.C.STAFF"]="J.C.STAFF", 
         ["Feel."]="Feel.", 
-        ["Production I.G"]="Production I.G", 
+        ["Production I.G"]="Production I.G", ["Production.I.G"] = "Production I.G", ["ProductionI.G"] = "Production I.G",
         ["ufotable"]="ufotable",
         ["动画工房"]="动画工房", 
         ["P.A.WORKS"]="P.A.WORKS", 
         ["Studio Pierrot"]="Studio Pierrot", 
-        ["Studio DEEN"]="Studio DEEN", ["STUDIO_DEEN"] = "Studio DEEN",
+        ["Studio DEEN"]="Studio DEEN", 
         ["TOEI"]="TOEI", 
         ["SUNRISE"]="SUNRISE", 
         ["TRIGGER"]="TRIGGER", 
@@ -328,6 +328,17 @@ function addLevelTags(tags, anime)
         ["Tear Studio"]="Tear Studio", ["Tear_Studio"]="Tear Studio",
         ["C-Station"]="C-Station",
         ["Seven Arcs"]="Seven Arcs", ["SEVEN_ARCS"]="Seven Arcs", ["SEVEN·ARCS"]="Seven Arcs", ["SEVEN・ARCS"]="Seven Arcs", ["SevenArcs"]="Seven Arcs",
+        ["SHIN-EI"] = "新锐动画", ["SHIN-EI动画"] = "新锐动画",
+        ["NAZ"] = "NAZ",
+        ["旭production"] = "旭Production",
+        ["KINEMACITRUS"] = "KINEMA CITRUS",
+        ["StudioGaina"] = "Studio GAINA",
+        ["StudioBind"] = "Studio Bind",
+        ["BiburyAnimationStudios"] = "拜伯里动画工作室",
+        ["st.SILVER"] = "st.SILVER",
+        ["WITSTUDIO"] = "WIT STUDIO",
+        ["StudioPalette"] = "Studio Palette",
+        ["CloverWorks"] = "CloverWorks",
     }
     for i, tag in ipairs(tags) do
         if studios[tag] then
@@ -365,7 +376,8 @@ end
 function tagFilter(tags, anime)
     local trivialTags = Set({
         "TV", "OVA", "OAD", "WEB", "日本", "季番", "动画", "日本动画", "未确定", "追番",
-        "佳作", "未上映", "未定档", "剧情", "TVA", "更多 +"
+        "佳作", "未上映", "未定档", "剧情", "TVA",
+        "更多 +"
     })
     local nameTags = Set(getNames(anime))
     local containRemoveTags = {"OVA"}
@@ -400,7 +412,7 @@ function tagFilter(tags, anime)
     removeWhen(tagSet, "萌系", {"萌", "萌豚"})
     removeWhen(tagSet, "卖肉", {"肉", "肉番"})
     removeWhen(tagSet, "肉番", {"肉"})
-    removeWhen(tagSet, "续作", {"续篇"})
+    removeWhen(tagSet, "续作", {"续篇", "续集"})
     removeWhen(tagSet, "狗粮", {"酸"})
     local retTags = {}
 
