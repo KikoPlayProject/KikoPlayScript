@@ -8,6 +8,8 @@ KikoPlay支持Lua脚本，有4种类型：
  - 番组日历脚本：位于script/bgm_calendar，提供每日放送列表。0.8.2起新增
 
 关于脚本开发的详细内容，请参考[KikoPlay脚本开发参考](reference.md)
+
+提交改动时，如果是新脚本或者升级旧脚本，请注意修改`meta.json`文件
 ## 反馈
 
 有新脚本可直接提交PR

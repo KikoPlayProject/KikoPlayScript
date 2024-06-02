@@ -499,7 +499,11 @@ KikoPlay提供的API位于kiko表中，通过kiko.xxx调用
    > }
    >
 
-   显示脚本环境信息
+ - `allscripts()`
+
+   > 返回： Array[[ScriptInfo](#scriptinfo)]：
+
+   获取KikoPlay中安装的全部脚本，1.0.3起新增
 
  - `xmlreader(str)`
 
@@ -932,5 +936,17 @@ KikoPlay传递到脚本时，staff的格式为：
       ["url"]=string
     },...],                     --放送站点列表
     ["focus"]=bool          --用户是否关注
+}
+```
+### ScriptInfo
+```lua
+{
+    ["type"]=number,        --脚本类型，0:弹幕 1:资料库 2:资源 3:番组日历
+    ["id"]=string,          --脚本id
+    ["name"]=string,        --脚本名称
+    ["version"]=string,     --脚本版本
+    ["desc"]=string,        --脚本描述信息
+    ["path"]=string,        --脚本文件路径
+    ["min_kiko"]=string,    --脚本要求最低KikoPlay版本
 }
 ```
