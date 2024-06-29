@@ -2,7 +2,8 @@ info = {
     ["name"] = "爱奇艺",
     ["id"] = "Kikyou.d.Iqiyi",
 	["desc"] = "爱奇艺弹幕脚本",
-	["version"] = "0.2"
+	["version"] = "0.3",
+    ["min_kiko"] = "1.0.0"
 }
 
 supportedURLsRe = {
@@ -10,43 +11,8 @@ supportedURLsRe = {
 }
 
 sampleSupporedURLs = {
-    "https://www.iqiyi.com/v_19rr1jer2o.html",
-    "https://www.iqiyi.com/w_19rsjq2cbh.html"
+    "https://www.iqiyi.com/v_19rrofvlmo.html",
 }
-
-function string.split(str, sep)
-    local pStart = 1
-    local nSplitIndex = 1
-    local nSplitArray = {}
-    while true do
-        local pEnd = string.find(str, sep, pStart)
-        if pEnd == pStart then
-            pStart = pEnd + string.len(sep)
-        else
-            if not pEnd then
-                nSplitArray[nSplitIndex] = string.sub(str, pStart, string.len(str))
-                break
-            end
-            nSplitArray[nSplitIndex] = string.sub(str, pStart, pEnd - 1)
-            pStart = pEnd + string.len(sep)
-            nSplitIndex = nSplitIndex + 1
-        end
-    end
-    return nSplitArray
-end
-
-function string.startsWith(str, substr)  
-    if str == nil or substr == nil then  return false end  
-    if string.find(str, substr) ~= 1 then  
-        return false  
-    else  
-        return true  
-    end  
-end
-
-function string.endsWith(str, substr)  
-    return substr == '' or string.sub(str,-#substr)==substr
-end
 
 function str2time(time_str)
     local timeArray = string.split(time_str, ':')
@@ -59,7 +25,11 @@ function str2time(time_str)
 end
 
 function search(keyword)
-    local err, reply = kiko.httpget(string.format("https://so.iqiyi.com/so/q_%s", keyword), {}, {["Accept"]="*/*"})
+    local header = {
+        ["User-Agent"]="Mozilla/5.0 (Windows NT 10.0; Win64; x64) Gecko/20100101 Firefox/108.0",
+        ["Accept"]="*/*",
+    }
+    local err, reply = kiko.httpget(string.format("https://so.iqiyi.com/so/q_%s", keyword), {}, header)
     if err ~= nil then error(err) end
     local content = reply["content"]
     local _, _, itemContent = string.find(content, "<div class=\"layout%-main\"(.*)<div class=\"layout%-side\"")
@@ -70,12 +40,12 @@ function search(keyword)
     local curData, curTitle = nil, nil
     local results = {}
     while not parser:atend() do
-        if string.startsWith(parser:curproperty("class"), "qy%-search%-result%-tit") then
+        if string.startswith(parser:curproperty("class"), "qy-search-result-tit") then
             repeat
                 parser:readnext()
             until parser:curproperty("class")=="main-tit"
             if itemStart then
-                if string.startsWith(curData, "http://www.iqiyi.com") or string.startsWith(curData, "https://www.iqiyi.com") then
+                if string.startswith(curData, "http://www.iqiyi.com") or string.startswith(curData, "https://www.iqiyi.com") then
                     local data = { ["url"] = curData }
                     local _, data_str = kiko.table2json(data)
                     table.insert(results, {
@@ -87,7 +57,7 @@ function search(keyword)
             itemStart = true
             curTitle = parser:curproperty("title")
             curData  = parser:curproperty("href")
-            if string.startsWith(curData, "//") then
+            if string.startswith(curData, "//") then
                 curData = "http:" .. curData
             end
         elseif parser:curproperty("class")=="qy-search-result-album" or parser:curproperty("class")=="qy-search-result-album-half" then
@@ -101,10 +71,10 @@ function search(keyword)
                         epTitle = curTitle .. " " .. epTitle
                     end
                     local epURL = parser:curproperty("href")
-                    if string.startsWith(epURL, "//") then
+                    if string.startswith(epURL, "//") then
                         epURL = "http:" .. epURL
                     end
-                    if string.startsWith(epURL, "http://www.iqiyi.com") or string.startsWith(epURL, "https://www.iqiyi.com") then
+                    if string.startswith(epURL, "http://www.iqiyi.com") or string.startswith(epURL, "https://www.iqiyi.com") then
                         local data = { ["url"] = epURL }
                         local _, data_str = kiko.table2json(data)
                         table.insert(results, {
@@ -119,7 +89,7 @@ function search(keyword)
         parser:readnext()
     end
     if itemStart then
-        if string.startsWith(curData, "http://www.iqiyi.com") or string.startsWith(curData, "https://www.iqiyi.com") then
+        if string.startswith(curData, "http://www.iqiyi.com") or string.startswith(curData, "https://www.iqiyi.com") then
             local data = { ["url"] = curData }
             local _, data_str = kiko.table2json(data)
             table.insert(results, {
@@ -237,7 +207,10 @@ function danmu(source)
 
     local url = source_obj["url"]
     if url == nil then return nil, {} end
-    local err, reply = kiko.httpget(url)
+    local header = {
+        ["User-Agent"]="Mozilla/5.0 (Windows NT 10.0; Win64; x64) Gecko/20100101 Firefox/108.0"
+    }
+    local err, reply = kiko.httpget(url, {}, header)
     if err ~= nil then error(err) end
     local content = reply["content"]
 
@@ -282,7 +255,7 @@ function danmu(source)
         error("视频信息解析失败")
     end
     source["title"] = obj["name"]
-    if obj["subtitle"] ~= nil and not string.endsWith(source["title"], obj["subtitle"]) then
+    if obj["subtitle"] ~= nil and not string.endswith(source["title"], obj["subtitle"]) then
         source["title"] = string.format("%s %s", obj["name"], obj["subtitle"])
     end
     source["duration"] = str2time(obj["duration"])

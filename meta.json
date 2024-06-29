@@ -38,11 +38,11 @@
     {
         "desc": "爱奇艺弹幕脚本",
         "id": "Kikyou.d.Iqiyi",
-        "min_kiko": "",
+        "min_kiko": "1.0.0",
         "name": "爱奇艺",
         "type": "danmu",
         "url": "https://raw.githubusercontent.com/KikoPlayProject/KikoPlayScript/master/danmu/iqiyi.lua",
-        "version": "0.2"
+        "version": "0.3"
     },
     {
         "desc": "芒果TV弹幕脚本",
