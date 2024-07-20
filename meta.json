@@ -81,13 +81,13 @@
         "version": "0.1"
     },
     {
-        "desc": "异世界动漫弹幕脚本，www.mikudm.com",
+        "desc": "异世界动漫弹幕脚本，www.dmmiku.com",
         "id": "Kikyou.d.ysjdm",
         "min_kiko": "",
         "name": "异世界动漫",
         "type": "danmu",
         "url": "https://raw.githubusercontent.com/KikoPlayProject/KikoPlayScript/master/danmu/ysjdm.lua",
-        "version": "0.3.1"
+        "version": "0.3.2"
     },
     {
         "desc": "Bangumi脚本，从bgm.tv中获取动画信息",

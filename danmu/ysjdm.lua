@@ -1,25 +1,25 @@
 info = {
     ["name"] = "异世界动漫",
     ["id"] = "Kikyou.d.ysjdm",
-	["desc"] = "异世界动漫弹幕脚本，www.mikudm.com",
-	["version"] = "0.3.1"
+	["desc"] = "异世界动漫弹幕脚本，www.dmmiku.com",
+	["version"] = "0.3.2"
 }
 
 settings = {
     ["latest_addr"] = {
         ["title"] = "异世界动漫最新地址",
         ["desc"] = "地址不要添加'http://'前缀",
-        ["default"] = "www.mikudm.com",
+        ["default"] = "www.dmmiku.com",
     }
 }
 
 supportedURLsRe = {
-    "(https?://)?www\\.mikudm\\.com/index.php/vod/(detail|play)/id/\\d+(/sid/\\d+/nid/\\d+)?.html"
+    "(https?://)?www\\.dmmiku\\.com/index.php/vod/(detail|play)/id/\\d+(/sid/\\d+/nid/\\d+)?.html"
 }
 
 sampleSupporedURLs = {
-    "https://www.mikudm.com/index.php/vod/detail/id/1417.html",
-    "https://www.mikudm.com/index.php/vod/play/id/1559/sid/1/nid/1.html"
+    "https://www.dmmiku.com/index.php/vod/detail/id/1417.html",
+    "https://www.dmmiku.com/index.php/vod/play/id/1559/sid/1/nid/1.html"
 }
 
 function search(keyword)
@@ -110,8 +110,8 @@ function urlinfo(url)
 end
 
 function downloadDanmu(id)
-    local dm_url= "https://bf.mmiku.net/dmku/"
-    local err, reply = kiko.httpget(dm_url, {["ac"]="get", ["id"]=id})
+    local dm_url= "https://ht.bfdm.xyz/barrage/api"
+    local err, reply = kiko.httpget(dm_url, {["ac"]="dm", ["id"]=id})
     if err ~= nil then error(err) end
     local err, obj = kiko.json2table(reply["content"]) 
     if err ~= nil then error(err) end
@@ -166,7 +166,7 @@ function danmu(source)
     local video_url = player_info_obj["url"]
     if video_url == nil then error("视频信息解析失败: video_url") end
 
-    local err, reply = kiko.httpget("https://bf.mmiku.net/m3u8.php", {["url"]=video_url}, {["Referer"]=string.format("https://%s/", settings["latest_addr"])})
+    local err, reply = kiko.httpget("https://bf.bfdm.xyz/m3u8.php", {["url"]=video_url}, {["Referer"]=string.format("https://%s/", settings["latest_addr"])})
     if err ~= nil then error(err) end
     local content = reply["content"]
     local _, _, dm_id = string.find(content, "\"id\"%s*:%s*\"(.-)\",")
