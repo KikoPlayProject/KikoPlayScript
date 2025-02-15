@@ -2,8 +2,49 @@ info = {
     ["name"] = "弹弹Match",
     ["id"] = "Kikyou.l.DDMatch",
 	["desc"] = "弹弹Play动画关联脚本，利用弹弹Play API根据文件信息获取匹配的动画信息",
-	["version"] = "0.1",
+	["version"] = "0.2",
+    ["min_kiko"] = "1.0.0",
 }
+
+settings = {
+    ["appId"]={
+        ["title"]="AppId",
+        ["desc"]="弹弹Play开放平台AppId",
+    },
+    ["appSecret"]={
+        ["title"]="AppSecret",
+        ["desc"]="弹弹Play开放平台AppSecret",
+    },
+}
+
+function hex2str(hex)
+    local str = ""
+    for i = 1, #hex, 2 do
+        local byteStr = hex:sub(i, i + 1)
+        local byte = tonumber(byteStr, 16)
+        if byte then
+            str = str .. string.char(byte)
+        else
+            error("Invalid hex string at position " .. i)
+        end
+    end
+    return str
+end
+
+function get_header(path)
+    local ts = os.time()
+    local appid = settings["appId"]
+    local appsecret = settings["appSecret"]
+    local secret = string.format("%s%d%s%s", appid, ts, path, appsecret)
+    local _, secret_hash = kiko.hashdata(secret, false, 0, 'sha256')
+    local _, hash_base64 = kiko.base64(hex2str(secret_hash), 'to')
+    return {
+        ["Accept"] = "application/json",
+        ["X-AppId"] = appid,
+        ["X-Signature"] = hash_base64,
+        ["X-Timestamp"] = ts
+    }
+end
 
 function setoption(key, val)
     kiko.log(string.format("Setting changed: %s = %s", key, val))
@@ -26,7 +67,8 @@ function getEpInfo(epTitle)
 end
 
 function search(keyword)
-    local err, reply = kiko.httpget("https://api.dandanplay.net/api/v2/search/episodes", {["anime"]=keyword})
+    local header = get_header("/api/v2/search/episodes")
+    local err, reply = kiko.httpget("https://api.dandanplay.net/api/v2/search/episodes", {["anime"]=keyword}, header)
     if err ~= nil then error(err) end
     local content = reply["content"]
     local err, obj = kiko.json2table(content)
@@ -87,10 +129,8 @@ function match(path)
         ["fileName"] = getFileTitle(path),
         ["fileHash"] = fileHash
     }
-    local header = {
-        ["Content-Type"]="application/json",
-        ["Accept"]="application/json"
-    }
+    local header = get_header("/api/v2/match")
+    header["Content-Type"] = "application/json"
     local err, post_data = kiko.table2json(post)
     local err, reply = kiko.httppost("https://api.dandanplay.net/api/v2/match", post_data, header)
     if err ~= nil then error(err) end

@@ -29,11 +29,11 @@
     {
         "desc": "弹弹Play弹幕脚本",
         "id": "Kikyou.d.Dandan",
-        "min_kiko": "",
+        "min_kiko": "1.0.0",
         "name": "Dandan",
         "type": "danmu",
         "url": "https://raw.githubusercontent.com/KikoPlayProject/KikoPlayScript/master/danmu/dandan.lua",
-        "version": "0.3"
+        "version": "0.4"
     },
     {
         "desc": "爱奇艺弹幕脚本",
@@ -101,11 +101,11 @@
     {
         "desc": "弹弹Play动画关联脚本，利用弹弹Play API根据文件信息获取匹配的动画信息",
         "id": "Kikyou.l.DDMatch",
-        "min_kiko": "",
+        "min_kiko": "1.0.0",
         "name": "弹弹Match",
         "type": "library",
         "url": "https://raw.githubusercontent.com/KikoPlayProject/KikoPlayScript/master/library/dandan_match.lua",
-        "version": "0.1"
+        "version": "0.2"
     },
     {
         "desc": "豆瓣电影脚本，从 movie.douban.com 中获取视频信息",

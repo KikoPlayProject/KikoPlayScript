@@ -2,7 +2,8 @@ info = {
     ["name"] = "Dandan",
     ["id"] = "Kikyou.d.Dandan",
 	["desc"] = "弹弹Play弹幕脚本",
-	["version"] = "0.3"
+	["version"] = "0.4",
+    ["min_kiko"] = "1.0.0",
 }
 
 settings = {
@@ -11,37 +12,51 @@ settings = {
         ["desc"] = "获取全部来源的弹幕（包含弹弹之外的来源）",
         ["default"] = "n",
         ["choices"] = "y,n"
-    }
+    },
+    ["appId"]={
+        ["title"]="AppId",
+        ["desc"]="弹弹Play开放平台AppId",
+    },
+    ["appSecret"]={
+        ["title"]="AppSecret",
+        ["desc"]="弹弹Play开放平台AppSecret",
+    },
 }
 
-function string.split(str, sep)
-    local pStart = 1
-    local nSplitIndex = 1
-    local nSplitArray = {}
-    while true do
-        local pEnd = string.find(str, sep, pStart)
-        if pEnd == pStart then
-            pStart = pEnd + string.len(sep)
+function hex2str(hex)
+    local str = ""
+    for i = 1, #hex, 2 do
+        local byteStr = hex:sub(i, i + 1)
+        local byte = tonumber(byteStr, 16)
+        if byte then
+            str = str .. string.char(byte)
         else
-            if not pEnd then
-                nSplitArray[nSplitIndex] = string.sub(str, pStart, string.len(str))
-                break
-            end
-            nSplitArray[nSplitIndex] = string.sub(str, pStart, pEnd - 1)
-            pStart = pEnd + string.len(sep)
-            nSplitIndex = nSplitIndex + 1
+            error("Invalid hex string at position " .. i)
         end
     end
-    return nSplitArray
+    return str
+end
+
+function get_header(path)
+    local ts = os.time()
+    local appid = settings["appId"]
+    local appsecret = settings["appSecret"]
+    local secret = string.format("%s%d%s%s", appid, ts, path, appsecret)
+    local _, secret_hash = kiko.hashdata(secret, false, 0, 'sha256')
+    local _, hash_base64 = kiko.base64(hex2str(secret_hash), 'to')
+    return {
+        ["Accept"] = "application/json",
+        ["X-AppId"] = appid,
+        ["X-Signature"] = hash_base64,
+        ["X-Timestamp"] = ts
+    }
 end
 
 function search(keyword)
     local query = {
         ["anime"]=keyword
     }
-    local header = {
-        ["Accept"] = "application/json"
-    }
+    local header = get_header("/api/v2/search/episodes")
     local err, reply = kiko.httpget("https://api.dandanplay.net/api/v2/search/episodes", query, header)
     if err ~= nil then error(err) end
     local content = reply["content"]
@@ -85,7 +100,7 @@ function danmu(source)
     if settings["withRelated"] == 'y' then
         query["withRelated"] = "true"
     end
-    local err, reply = kiko.httpget(danmuUrl, query, {["Accept"]="application/json"})
+    local err, reply = kiko.httpget(danmuUrl, query, get_header("/api/v2/comment/" .. source["data"]))
     if err ~= nil then error(err) end
     local danmuContent = reply["content"]
 
