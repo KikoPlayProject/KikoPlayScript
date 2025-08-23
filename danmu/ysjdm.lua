@@ -2,7 +2,9 @@ info = {
     ["name"] = "异世界动漫",
     ["id"] = "Kikyou.d.ysjdm",
 	["desc"] = "异世界动漫弹幕脚本，www.dmmiku.com",
-	["version"] = "0.3.2"
+	["version"] = "0.3.3",
+    ["min_kiko"] = "2.0.0",
+    ["label_color"] = "0xFF5C4B",
 }
 
 settings = {

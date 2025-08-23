@@ -1,7 +1,7 @@
 -- 豆瓣电影 Scraper
 -- KikoPlay 资料脚本，从豆瓣电影获取相关信息
 --
--- 关于自动关联，建议的[电视剧]目录层级以及命名方式
+-- 关于自动关联，建议的[电视剧]目录层级以及命名方式  (KikoPlay 2.0开始文件识别脚本与资料脚本分离，这个脚本中的match函数不会被调用)
 -- > 我有一个朋友
 --      -- 01.mp4
 --      -- 02.mp4
@@ -21,26 +21,111 @@ info = {
     ["name"] = "豆瓣电影",
     ["id"] = "Kikyou.l.Douban",
     ["desc"] = "豆瓣电影脚本，从 movie.douban.com 中获取视频信息",
-    ["version"] = "0.0.1",
-    ["min_kiko"] = "1.0.1"
+    ["version"] = "0.2",
+    ["min_kiko"] = "2.0.0"
 }
 
--- 设置项
-settings = {
 
-}
+local function url_decode(str)
+    if not str then return "" end
+    -- 处理加号表示的空格
+    str = string.gsub(str, "+", " ")
+    -- 处理百分比编码的字符
+    str = string.gsub(str, "%%(%x%x)", function(hex)
+        -- 将16进制字符串转换为字符
+        return string.char(tonumber(hex, 16))
+    end)
+    return str
+end
 
-searchsettings = {
-    ["search_result_need_html"] = {
-        ["title"] = "结果包含 HTML 标签 ",
-        ["default"] = "0",
-        ["desc"] = "附加信息会包含 HTML 标签",
-        ["save"] = true,
-        ["display_type"] = 3,
+-- 解析查询字符串部分
+local function parse_query_string(query_str)
+    local params = {}
+    if not query_str or query_str == "" then
+        return params
+    end
+    
+    -- 分割参数对
+    for pair in string.gmatch(query_str, "[^&]+") do
+        if pair ~= "" then
+            -- 分割键和值，处理没有值的参数（如?debug&verbose）
+            local key, value = string.match(pair, "^([^=]+)=?(.*)$")
+            if key then
+                -- 解码键和值
+                key = url_decode(key)
+                value = url_decode(value)
+                
+                -- 处理多个同名参数的情况
+                if params[key] then
+                    -- 如果已经存在该键，将其转为数组
+                    if type(params[key]) ~= "table" then
+                        params[key] = {params[key]}
+                    end
+                    table.insert(params[key], value)
+                else
+                    params[key] = value
+                end
+            end
+        end
+    end
+    
+    return params
+end
+
+-- 解析完整URL并获取查询参数，处理转义字符
+local function parse_url_query(url)
+    if not url or type(url) ~= "string" then
+        return {}
+    end
+    
+    -- 提取查询字符串部分（问号后面、锚点前面的内容）
+    local query_str = string.match(url, "?([^#]*)")
+    
+    -- 解析查询字符串
+    return parse_query_string(query_str)
+end
+
+-- HTML实体解码函数
+local function html_entity_decode(str)
+    if not str or type(str) ~= "string" then
+        return ""
+    end
+    
+    -- 常见的HTML命名实体映射表
+    local entities = {
+        ["&amp;"]  = "&",   -- 和号
+        ["&quot;"] = "\"",  -- 双引号
+        ["&apos;"] = "'",   -- 单引号
+        ["&lt;"]   = "<",   -- 小于号
+        ["&gt;"]   = ">",   -- 大于号
+        ["&nbsp;"] = " ",   -- 非换行空格
+        ["&copy;"] = "©",   -- 版权符号
+        ["&reg;"]  = "®",   -- 注册商标
+        ["&trade;"]= "™",   -- 商标符号
+        ["&cent;"] = "¢",   -- 分
+        ["&pound;"]= "£",   -- 英镑
+        ["&yen;"]  = "¥",   -- 日元
+        ["&euro;"] = "€",   -- 欧元
     }
-}
-
-
+    
+    -- 首先替换命名实体
+    local result = str
+    for entity, char in pairs(entities) do
+        result = string.gsub(result, entity, char)
+    end
+    
+    -- 处理十进制实体，如&#39;
+    result = string.gsub(result, "&#(%d+);", function(num)
+        return string.char(tonumber(num))
+    end)
+    
+    -- 处理十六进制实体，如&#x27;
+    result = string.gsub(result, "&#x(%x+);", function(hex)
+        return string.char(tonumber(hex, 16))
+    end)
+    
+    return result
+end
 
 
 -- 完成搜索功能 ，可选
@@ -83,31 +168,31 @@ function search(keyword, options)
                 local _, _, cast = string.find(itemStr, '<span class="subject%-cast">(.-)</span>')
                 local extra = ""
                 if tag ~= nil then
-                    if options["search_result_need_html"] == "1" then
-                        extra = extra .. "<p style='color:red'>" .. tag .. "</p>"
-                    else
-                        extra = extra .. tag
-                    end
+                    extra = extra .. tag
                 end
                 if cast ~= nil then
-                    if options["search_result_need_html"] == "1" then
-                        extra = extra .. "<p>" .. cast .. "</p>"
-                    else
-                        extra = extra .. '\n' .. cast
-                    end
+                    extra = extra .. '\n' .. cast
                 end
                 local _, _, desc = string.find(itemStr, '<p>(.-)</p>')
                 if desc ~= nil then
-                    if options["search_result_need_html"] == "1" then
-                        extra = extra .. "<p>" .. desc .. "</p>"
-                    else
-                        extra = extra .. '\n' .. desc
-                    end
+                    extra = extra .. '\n' .. desc
                 end
+                
+                local url_query = parse_url_query(url)
+                if url_query["url"] ~= nil then
+                    url = url_query["url"]
+                end
+                local data = {
+                    ["url"] = url,
+                }
+                local _, _, subject_id = string.find(url, "subject/(%d+)")
+                if subject_id ~= nil then
+                    data["subject_id"] = subject_id
+                end
+                local err, media_data_json = kiko.table2json(data)
 
-                local err, media_data_json = kiko.table2json({ ["url"] = url })
                 table.insert(mediais, {
-                    ["name"] = title,
+                    ["name"] = string.trim(title),
                     ["data"] = media_data_json,
                     ["extra"] = extra,
                 })
@@ -159,10 +244,18 @@ function detail(anime)
     kiko.log("function detail")
     local err, anime_data = kiko.json2table(anime["data"])
     if err ~= nil or anime_data.url == nil or anime_data.url == "" then
-        return
+        return nil
     end
 
-    local err, reply = kiko.httpget(anime_data.url)
+    local url = ''
+    if anime_data.url ~= nil then
+        url = anime_data.url
+    end
+    if anime_data.subject_id ~= nil then
+        url = "https://movie.douban.com/subject/" .. anime_data.subject_id .. "/"
+    end
+
+    local err, reply = kiko.httpget(url)
 
     if err ~= nil then error(err) end
     local content = reply["content"]
@@ -176,14 +269,61 @@ function detail(anime)
             error(err1)
         end
 
+        local name = data.name
+        if string.startswith(name, anime.name) then
+            name = anime.name  -- data.name 可能包含原名和翻译名
+        end
         local anime_detail = {
-            ["name"] = data.name,
+            ["name"] = name,
             ["url"] = "https://movie.douban.com" .. data.url,
             ["desc"] = data.description,
             ["airdate"] = data.datePublished,
             ["coverurl"] = data.image,
-            --anime["staff"] = data.datePublished
         }
+
+        local staffs = {}
+        if data.director ~= nil and #data.director > 0 then
+            local directors = {}
+            for _, director in ipairs(data.director) do
+                table.insert(directors, html_entity_decode(director.name))
+            end
+            table.insert(staffs, "导演:" .. table.concat(directors, ", "))
+        end
+        if data.author ~= nil and #data.author > 0 then
+            local authors = {}
+            for _, author in ipairs(data.author) do
+                table.insert(authors, html_entity_decode(author.name))
+            end
+            table.insert(staffs, "编剧:" .. table.concat(authors, ", "))
+        end
+        if data.actor ~= nil and #data.actor > 0 then
+            local actors = {}
+            for _, actor in ipairs(data.actor) do
+                table.insert(actors, html_entity_decode(actor.name))
+            end
+            table.insert(staffs, "主演:" .. table.concat(actors, ", "))
+        end
+        -- staff info
+        local _, _, staffListStr = string.find(content, '<div id="info">(.-)</div>')
+        if staffListStr ~= nil then
+            local lpos = 1
+            local npos = #staffListStr
+            while lpos < npos do
+                local _, epos, role, names = string.find(staffListStr, '<span class="pl">(.-):</span>(.-)<br/?>', lpos)
+                if role ~= nil and names ~= nil then
+                    role = string.trim(role)
+                    names = string.gsub(names, "<.->", " ")
+                    names = string.trim(names)
+                    table.insert(staffs, role .. ":" .. html_entity_decode(names))
+                    lpos = epos + 1
+                else
+                    break
+                end
+            end
+        end
+        if #staffs > 0 then
+            anime_detail["staff"] = table.concat(staffs, ";")
+        end
 
         -- 角色
         local _, _, celebritieListStr = string.find(content,
@@ -236,6 +376,9 @@ function detail(anime)
             if count > 0 then
                 anime_detail["eps"] = getEpInfo(count)
             end
+        else
+            anime_detail["epcount"] = 1
+            anime_detail["eps"] = getEpInfo(1)
         end
 
         -- 标签
@@ -251,10 +394,10 @@ function detail(anime)
             end
 
             anime_data["tags"] = tags
-
-            local err, media_data_json = kiko.table2json(anime_data)
-            anime_detail["data"] = media_data_json
         end
+
+        local err, media_data_json = kiko.table2json(anime_data)
+        anime_detail["data"] = media_data_json
 
         return anime_detail
     end

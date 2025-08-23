@@ -1,9 +1,9 @@
 info = {
     ["name"] = "弹弹Match",
-    ["id"] = "Kikyou.l.DDMatch",
+    ["id"] = "Kikyou.m.DDMatch",
 	["desc"] = "弹弹Play动画关联脚本，利用弹弹Play API根据文件信息获取匹配的动画信息",
-	["version"] = "0.2",
-    ["min_kiko"] = "1.0.0",
+	["version"] = "0.1",
+    ["min_kiko"] = "2.0.0",
 }
 
 settings = {
@@ -66,42 +66,6 @@ function getEpInfo(epTitle)
     return 1, 1, epTitle
 end
 
-function search(keyword)
-    local header = get_header("/api/v2/search/episodes")
-    local err, reply = kiko.httpget("https://api.dandanplay.net/api/v2/search/episodes", {["anime"]=keyword}, header)
-    if err ~= nil then error(err) end
-    local content = reply["content"]
-    local err, obj = kiko.json2table(content)
-    if err ~= nil then
-        error(err)
-    end
-    if not obj['success'] then
-        error(obj['errorMessage'])
-    end
-    local animes = {}
-    for _, anime in pairs(obj['animes']) do
-        local animeName = anime["animeTitle"]
-        local extra = anime["typeDescription"]
-        local data = tostring(anime["animeId"])
-        local epList = {}
-        for __, ep in pairs(anime["episodes"]) do
-            local epIndex, epType, epName = getEpInfo(ep["episodeTitle"])
-            table.insert(epList,{
-                ["index"]=epIndex,
-                ["name"]=epName,
-                ["type"]=epType
-            })
-        end
-        table.insert(animes, {
-            ["name"]=animeName,
-            ["data"]=data,
-            ["extra"]=extra,
-            ["eps"]=epList
-        })
-    end
-    return animes
-end
-
 function getFileTitle(path)
     local pos = 0
     for i = #path,1,-1 do
@@ -123,16 +87,77 @@ function getFileTitle(path)
     return string.sub(titleExt, 1, pos_dt-1)
 end
 
+bgmIdCache = {}
+function getBgmId(animeId)
+    if bgmIdCache[animeId] ~= nil then
+        return bgmIdCache[animeId]
+    end
+
+    local err, reply = nil, nil
+    local path = "/api/v2/bangumi/" .. animeId
+    if kiko.envinfo()["kservice"] then
+        
+        local header = {
+            ["Accept"] = "application/json"
+        }
+        local options = {
+            ["set_dandan_header"] = true,
+            ["dandan_path"] = path,
+        }
+        err, reply = kiko.httpget("https://api.dandanplay.net" .. path, {}, header, options)
+    else
+        local header = get_header(path)
+        err, reply = kiko.httpget("https://api.dandanplay.net" .. path, {}, header)
+    end
+
+    if err ~= nil then 
+        kiko.log(err)
+        return nil
+    end
+    local content = reply["content"]
+    local err, obj = kiko.json2table(content)
+    if err ~= nil or obj["errorCode"] ~= 0 then
+        kiko.log(err)
+        return nil
+    end
+    local bgmPath = obj["bangumi"]["bangumiUrl"]
+    kiko.log("BGM Path: " .. bgmPath)
+    local bgmId = string.match(bgmPath, "https?://bangumi.tv/subject/(%d+)")
+    if bgmId == nil then
+        kiko.log("Failed to extract BGM ID from path: " .. bgmPath)
+        bgmIdCache[animeId] = ""
+        return nil
+    end
+    bgmIdCache[animeId] = bgmId
+    return bgmId
+end
+
 function match(path)
     local err, fileHash = kiko.hashdata(path, true, 16*1024*1024)
     local post = {
         ["fileName"] = getFileTitle(path),
+        ["fileSize"] = kiko.dir.fileinfo(path)["size"],
         ["fileHash"] = fileHash
     }
-    local header = get_header("/api/v2/match")
-    header["Content-Type"] = "application/json"
     local err, post_data = kiko.table2json(post)
-    local err, reply = kiko.httppost("https://api.dandanplay.net/api/v2/match", post_data, header)
+    
+    local err, reply = nil, nil
+    if kiko.envinfo()["kservice"] then
+        local header = {
+            ["Content-Type"] = "application/json",
+            ["Accept"] = "application/json"
+        }
+        local options = {
+            ["set_dandan_header"] = true,
+            ["dandan_path"] = "/api/v2/match",
+        }
+        err, reply = kiko.httppost("https://api.dandanplay.net/api/v2/match", post_data, header, {}, options)
+    else
+        local header = get_header("/api/v2/match")
+        header["Content-Type"] = "application/json"
+        err, reply = kiko.httppost("https://api.dandanplay.net/api/v2/match", post_data, header)
+    end
+    
     if err ~= nil then error(err) end
     local content = reply["content"]
     local err, obj = kiko.json2table(content)
@@ -148,12 +173,12 @@ function match(path)
     end
     local anime = matchObj["animeTitle"]
     local animeId = tostring(matchObj["animeId"])
+    local bgmId = getBgmId(animeId)
     local epIndex, epType, epName = getEpInfo(matchObj["episodeTitle"])
-    return {
+    local match_res = {
         ["success"]=true,
         ["anime"]={
             ["name"]=anime,
-            ["data"]=animeId
         },
         ["ep"]={
             ["name"]=epName,
@@ -161,4 +186,9 @@ function match(path)
             ["type"]=epType
         }
     }
+    if bgmId ~= nil and bgmId ~= "" then
+        match_res["anime"]["data"] = bgmId
+        match_res["anime"]["scriptId"] = "Kikyou.l.Bangumi"
+    end
+    return match_res
 end

@@ -2,8 +2,9 @@ info = {
     ["name"] = "芒果TV",
     ["id"] = "Kikyou.d.mgtv",
     ["desc"] = "芒果TV弹幕脚本",
-    ["version"] = "0.1",
-    ["min_kiko"] = "0.9.2"
+    ["version"] = "0.2",
+    ["min_kiko"] = "2.0.0",
+    ["label_color"] = "0xFF5F00",
 }
 
 supportedURLsRe = {

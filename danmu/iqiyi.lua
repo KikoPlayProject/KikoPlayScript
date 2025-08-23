@@ -2,8 +2,9 @@ info = {
     ["name"] = "爱奇艺",
     ["id"] = "Kikyou.d.Iqiyi",
 	["desc"] = "爱奇艺弹幕脚本",
-	["version"] = "0.3",
-    ["min_kiko"] = "1.0.0"
+	["version"] = "0.4",
+    ["min_kiko"] = "2.0.0",
+    ["label_color"] = "0x00da5a",
 }
 
 supportedURLsRe = {
@@ -25,84 +26,64 @@ function str2time(time_str)
 end
 
 function search(keyword)
-    local header = {
-        ["User-Agent"]="Mozilla/5.0 (Windows NT 10.0; Win64; x64) Gecko/20100101 Firefox/108.0",
-        ["Accept"]="*/*",
+    local query = {
+        ["key"] = keyword,
+        ["if"] = "html5",
     }
-    local err, reply = kiko.httpget(string.format("https://so.iqiyi.com/so/q_%s", keyword), {}, header)
+    local err, reply = kiko.httpget("https://search.video.iqiyi.com/o", query)
     if err ~= nil then error(err) end
-    local content = reply["content"]
-    local _, _, itemContent = string.find(content, "<div class=\"layout%-main\"(.*)<div class=\"layout%-side\"")
-    if itemContent == nil then return {} end
+    local err, obj = kiko.json2table(reply.content)
+    if err ~= nil then error(err) end
 
-    local parser = kiko.htmlparser(itemContent)
-    local itemStart = false
-    local curData, curTitle = nil, nil
-    local results = {}
-    while not parser:atend() do
-        if string.startswith(parser:curproperty("class"), "qy-search-result-tit") then
-            repeat
-                parser:readnext()
-            until parser:curproperty("class")=="main-tit"
-            if itemStart then
-                if string.startswith(curData, "http://www.iqiyi.com") or string.startswith(curData, "https://www.iqiyi.com") then
-                    local data = { ["url"] = curData }
-                    local _, data_str = kiko.table2json(data)
-                    table.insert(results, {
-                        ["title"] = curTitle,
-                        ["data"] = data_str
-                    })
+    local res = {}
+    if obj["data"] == nil or obj["data"]["docinfos"] == nil then
+        return res
+    end
+
+    for _, doc in ipairs(obj["data"]["docinfos"]) do
+        local albumDocInfo = doc["albumDocInfo"]
+        if albumDocInfo	~= nil and albumDocInfo["videoinfos"] ~= nil then
+            local items = {}
+            for _, video in ipairs(albumDocInfo["videoinfos"]) do
+                if video["tvId"] ~= nil then
+                    local source_obj = {
+                        ["vid"] = string.format("%d", video["tvId"]),
+                        ["pieces"] = math.ceil(video["timeLength"] / 300 + 1),
+                    }
+                    local _, data_str = kiko.table2json(source_obj)
+                    local source = {
+                        ["title"] = video["itemshortTitle"],
+                        ["duration"] = video["timeLength"],
+                        ["data"] = data_str,
+                    }
+                    table.insert(items, source)
                 end
             end
-            itemStart = true
-            curTitle = parser:curproperty("title")
-            curData  = parser:curproperty("href")
-            if string.startswith(curData, "//") then
-                curData = "http:" .. curData
+            if #items == 1 then
+                table.insert(res, items[1])
+            elseif #items > 1 then
+                local _, data_str = kiko.table2json(items)
+                table.insert(res, {
+                    ["title"] = albumDocInfo["albumTitle"],
+                    ["desc"] = string.format("共 %d 集", #items),
+                    ["data"] = data_str
+                })
             end
-        elseif parser:curproperty("class")=="qy-search-result-album" or parser:curproperty("class")=="qy-search-result-album-half" then
-            local typeAlbum = parser:curproperty("class")=="qy-search-result-album"
-            while parser:curnode()~="ul" or parser:start() do
-                parser:readnext()
-                if parser:curnode()=="li" and parser:curproperty("class")=="album-item" then
-                    parser:readnext()
-                    local epTitle = parser:curproperty("title")
-                    if typeAlbum then
-                        epTitle = curTitle .. " " .. epTitle
-                    end
-                    local epURL = parser:curproperty("href")
-                    if string.startswith(epURL, "//") then
-                        epURL = "http:" .. epURL
-                    end
-                    if string.startswith(epURL, "http://www.iqiyi.com") or string.startswith(epURL, "https://www.iqiyi.com") then
-                        local data = { ["url"] = epURL }
-                        local _, data_str = kiko.table2json(data)
-                        table.insert(results, {
-                            ["title"] = epTitle,
-                            ["data"] = data_str
-                        })
-                    end
-                end
-            end
-            itemStart = false
-        end
-        parser:readnext()
-    end
-    if itemStart then
-        if string.startswith(curData, "http://www.iqiyi.com") or string.startswith(curData, "https://www.iqiyi.com") then
-            local data = { ["url"] = curData }
-            local _, data_str = kiko.table2json(data)
-            table.insert(results, {
-                ["title"] = curTitle,
-                ["data"] = data_str
-            })
         end
     end
-    return results
+
+    return res
 end
 
 function epinfo(source)
-    return {source}
+    local err, obj = kiko.json2table(source["data"])
+    if err ~= nil then error(err) end
+    if obj["url"] ~= nil then
+        return {source}
+    elseif obj["vid"] ~= nil then
+        return {source}
+    end
+    return obj
 end
 
 function urlinfo(url)
@@ -205,61 +186,30 @@ function danmu(source)
         return nil, downloadDanmu(source_obj["vid"], source_obj["pieces"])
     end
 
-    local url = source_obj["url"]
-    if url == nil then return nil, {} end
-    local header = {
-        ["User-Agent"]="Mozilla/5.0 (Windows NT 10.0; Win64; x64) Gecko/20100101 Firefox/108.0"
-    }
-    local err, reply = kiko.httpget(url, {}, header)
-    if err ~= nil then error(err) end
-    local content = reply["content"]
 
-    local start = nil
-    repeat
-        local pos, _, cvid = string.find(content, "pageProps\":%s-({\".-})")
-        if cvid ~= nil then
-            start = pos
-            break
-        end
-        local pos, _, cvid = string.find(content, "QiyiPlayerProphetData%s-||%s-({\".-})")
-        if cvid ~= nil then
-            start = pos
-            break
-        end
-        error("视频Id解析失败")
-    until true
-    while string.sub(content, start, start)~='{' do
-        start = start+1
+    local headers = {
+        ["Referer"] = source_obj["url"],
+    }
+    
+    local err, reply = kiko.httpget("https://mesh.if.iqiyi.com/player/lw/lwplay/accelerator.js", {["format"]="json"}, headers)
+    if err ~= nil then error(err) end
+    local err, obj = kiko.json2table(reply.content) 
+    if err ~= nil then error(err) end
+
+    local videoInfo = obj["videoInfo"]
+    if videoInfo == nil or videoInfo["tvId"] == nil then
+        error("视频信息获取失败")
     end
-    local c = 1;
-    local endPos = start
-    for i=start+1,#content do
-        if string.sub(content, i, i)=='{' then
-            c = c+1
-        elseif string.sub(content, i, i)=='}' then
-            c = c-1
-            if c == 0 then 
-                endPos = i
-                break
-            end
-        end
-    end
-    local playInfo = string.sub(content, start, endPos)
-    local err, obj = kiko.json2table(playInfo) 
-    if err ~= nil then 
-        kiko.log(playInfo)
-        error(err)
-    end
-    obj = obj["videoInfo"]
-    if obj == nil then
-        error("视频信息解析失败")
-    end
-    source["title"] = obj["name"]
-    if obj["subtitle"] ~= nil and not string.endswith(source["title"], obj["subtitle"]) then
-        source["title"] = string.format("%s %s", obj["name"], obj["subtitle"])
-    end
-    source["duration"] = str2time(obj["duration"])
-    source_obj["vid"] = string.format("%d", obj["tvId"])
+
+    local err, reply = kiko.httpget(string.format("https://pcw-api.iqiyi.com/video/video/baseinfo/%d", videoInfo["tvId"]))
+    if err ~= nil then error(err) end
+    local err, obj = kiko.json2table(reply.content) 
+    if err ~= nil then error(err) end
+    local data_obj = obj["data"]
+
+    source["title"] = videoInfo["title"]
+    source["duration"] = str2time(data_obj["duration"])
+    source_obj["vid"] = string.format("%d", videoInfo["tvId"])
     source_obj["pieces"] = math.ceil(source["duration"] / 300 + 1)
     local _, data_str = kiko.table2json(source_obj)
     source["data"] = data_str

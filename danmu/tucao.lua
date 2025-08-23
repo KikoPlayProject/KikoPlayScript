@@ -2,24 +2,25 @@ info = {
     ["name"] = "Tucao",
     ["id"] = "Kikyou.d.Tucao",
 	["desc"] = "Tucao弹幕脚本",
-	["version"] = "0.2",
-    ["min_kiko"] = "1.0.0"
+	["version"] = "0.3",
+    ["min_kiko"] = "2.0.0",
+    ["label_color"] = "0xF72B5F",
 }
 
 settings = {
     ["latest_addr"] = {
         ["title"] = "吐槽最新地址",
         ["desc"] = "地址不要添加'https://'前缀",
-        ["default"] = "www.tucao.cool",
+        ["default"] = "www.tucao.my",
     }
 }
 
 supportedURLsRe = {
-    "(https?://)?www\\.tucao\\.cool/play/h[0-9]+(#[0-9]+)?/?"
+    "(https?://)?www\\.tucao\\.my/play/h[0-9]+(#[0-9]+)?/?"
 }
 
 sampleSupporedURLs = {
-    "https://www.tucao.cool/play/h4077044/"
+    "https://www.tucao.my/play/h4077044/"
 }
 
 function search(keyword)
@@ -74,7 +75,7 @@ function epinfo(source)
     local results = {}
     if epContent ~= nil then
         local eps = string.split(epContent, '|')
-        local _, _, pageTitle = string.find(content, "<h1 class=\"show_title\">(.-)<span style=\"color:#F40;\">")
+        local _, _, pageTitle = string.find(content, "<h1 class=\"show_title\">(.-)<")
         local index = 0
         for i = 2,#eps do
             local title = string.split(eps[i], '*')[1]
@@ -82,7 +83,7 @@ function epinfo(source)
                 if pageTitle == nil or #pageTitle == 0 then
                     title = source["title"]
                 else
-                    title = pageTitle
+                    title = string.format("%s %d", pageTitle, index+1)
                 end
             end
             local data = {
@@ -101,11 +102,12 @@ function epinfo(source)
 end
 
 function urlinfo(url)
+    local base_url = string.gsub(settings["latest_addr"], "%.", "%%.")
     local pattens = {
-        ["https?://www%.tucao%.cool/play/h%d+/?"]="hid",
-        ["www%.tucao%.cool/play/h%d+/?"]="hid",
-        ["https?://www%.tucao%.cool/play/h%d+#%d+/?"]="hindex",
-        ["www%.tucao%.cool/play/h%d+#%d+/?"]="hindex",
+        ["https?://" .. base_url .. "/play/h%d+/?"]="hid",
+        [base_url .. "/play/h%d+/?"]="hid",
+        ["https?://" .. base_url .. "/play/h%d+#%d+/?"]="hindex",
+        [base_url .. "/play/h%d+#%d+/?"]="hindex",
     }
     local matched = nil
     for pv, k in pairs(pattens) do

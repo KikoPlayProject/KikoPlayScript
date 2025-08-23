@@ -2,9 +2,11 @@ info = {
     ["name"] = "Dandan",
     ["id"] = "Kikyou.d.Dandan",
 	["desc"] = "弹弹Play弹幕脚本",
-	["version"] = "0.4",
-    ["min_kiko"] = "1.0.0",
+	["version"] = "0.5",
+    ["min_kiko"] = "2.0.0",
+    ["label_color"] = "0x25AAE1",
 }
+
 
 settings = {
     ["withRelated"] = {
@@ -56,8 +58,22 @@ function search(keyword)
     local query = {
         ["anime"]=keyword
     }
-    local header = get_header("/api/v2/search/episodes")
-    local err, reply = kiko.httpget("https://api.dandanplay.net/api/v2/search/episodes", query, header)
+
+    local err, reply = nil, nil
+    if kiko.envinfo()["kservice"] then
+        local header = {
+            ["Accept"] = "application/json"
+        }
+        local options = {
+            ["set_dandan_header"] = true,
+            ["dandan_path"] = "/api/v2/search/episodes",
+        }
+        err, reply = kiko.httpget("https://api.dandanplay.net/api/v2/search/episodes", query, header, options)
+    else
+        local header = get_header("/api/v2/search/episodes")
+        err, reply = kiko.httpget("https://api.dandanplay.net/api/v2/search/episodes", query, header)
+    end
+
     if err ~= nil then error(err) end
     local content = reply["content"]
     local err, obj = kiko.json2table(content)
@@ -100,7 +116,22 @@ function danmu(source)
     if settings["withRelated"] == 'y' then
         query["withRelated"] = "true"
     end
-    local err, reply = kiko.httpget(danmuUrl, query, get_header("/api/v2/comment/" .. source["data"]))
+
+    local err, reply = nil, nil
+    if kiko.envinfo()["kservice"] then
+        local header = {
+            ["Accept"] = "application/json"
+        }
+        local options = {
+            ["set_dandan_header"] = true,
+            ["dandan_path"] = "/api/v2/comment/" .. source["data"],
+        }
+        err, reply = kiko.httpget(danmuUrl, query, header, options)
+    else
+        local header = get_header("/api/v2/comment/" .. source["data"])
+        err, reply = kiko.httpget(danmuUrl, query, header)
+    end
+    
     if err ~= nil then error(err) end
     local danmuContent = reply["content"]
 

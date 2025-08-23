@@ -2,7 +2,9 @@ info = {
     ["name"] = "动画疯",
     ["id"] = "Kikyou.d.Gamer",
 	["desc"] = "巴哈姆特动画疯弹幕脚本",
-	["version"] = "0.1.3"
+	["version"] = "0.2",
+    ["min_kiko"] = "2.0.0",
+    ["label_color"] = "0x4798AA",
 }
 
 supportedURLsRe = {
@@ -11,17 +13,6 @@ supportedURLsRe = {
 
 sampleSupporedURLs = {
     "https://ani.gamer.com.tw/animeVideo.php?sn=9285"
-}
-
-settings = {
-    ["user_agent"]={
-        ["title"]="UA",
-        ["desc"]="User Agent",
-    },
-    ["cookie"]={
-        ["title"]="Cookie",
-        ["desc"]="Cookie",
-    },
 }
 
 scriptmenus = {
@@ -39,16 +30,45 @@ function search(keyword)
     local query = {
         ["keyword"]=tradKw
     }
-    local headers = {}
-    if #settings["user_agent"] > 0 and #settings["cookie"] > 0 then
-        headers = {
-            ["User-Agent"] = settings["user_agent"],
-            ["Cookie"] = settings["cookie"],
-        }
+
+    local cookies = kiko.browser.cookie(".gamer.com.tw")
+    local cookie_str = ""
+    for k, v in pairs(cookies) do
+        cookie_str = cookie_str  .. string.format("%s=%s; ", k, v)
     end
-    local err, reply = kiko.httpget("https://ani.gamer.com.tw/search.php", query, headers)
-    if err ~= nil then error(err) end
-    local content = reply["content"]
+
+    local browser_search = function()
+        local b = kiko.browser.create()
+        local succ = b:load("https://ani.gamer.com.tw/search.php", query, 20000)
+        local content = b:html()
+        local _, _, searchContent = string.find(content, "<div class=\"animate%-theme%-list\">(.+)<div class=\"animate%-theme%-list animate%-wish\">")
+        if searchContent == nil then
+            _, _, searchContent = string.find(content, "<div class=\"animate%-theme%-list\">(.+)<div class=\"footer\">")
+        end
+
+        if searchContent == nil then  -- 手动验证
+            b:show("验证成功跳转后关闭页面")
+            content = b:html()
+        end
+        return content
+    end
+
+    local content = ''
+    if #cookie_str == 0 then 
+        content = browser_search()
+    else
+        local headers =  {
+            ["User-Agent"] = kiko.browser.ua(),
+            ["Cookie"] = cookie_str,
+        }
+        local err, reply = kiko.httpget("https://ani.gamer.com.tw/search.php", query, headers)
+        if err ~= nil then
+            content = browser_search()
+        else
+            content = reply["content"]
+        end
+    end
+
     local _, _, searchContent = string.find(content, "<div class=\"animate%-theme%-list\">(.+)<div class=\"animate%-theme%-list animate%-wish\">")
     if searchContent == nil then
         _, _, searchContent = string.find(content, "<div class=\"animate%-theme%-list\">(.+)<div class=\"footer\">")
@@ -96,16 +116,42 @@ function epinfo(source)
     local query = {
         ["sn"]=source_obj["sn"]
     }
-    local headers = {}
-    if #settings["user_agent"] > 0 and #settings["cookie"] > 0 then
-        headers = {
-            ["User-Agent"] = settings["user_agent"],
-            ["Cookie"] = settings["cookie"],
-        }
+    
+    local cookies = kiko.browser.cookie(".gamer.com.tw")
+    local cookie_str = ""
+    for k, v in pairs(cookies) do
+        cookie_str = cookie_str  .. string.format("%s=%s; ", k, v)
     end
-    local err, reply = kiko.httpget(baseUrl, query, headers)
-    if err ~= nil then error(err) end
-    local content = reply["content"]
+
+    local browser_search = function()
+        local b = kiko.browser.create()
+        local succ = b:load(baseUrl, query, 20000)
+        local content = b:html()
+        local _, _, epContent = string.find(content, "<section class=\"season\">(.-)</section>")
+
+        if epContent == nil then  -- 手动验证
+            b:show("验证成功跳转后关闭页面")
+            content = b:html()
+        end
+        return content
+    end
+
+    local content = ''
+    if #cookie_str == 0 then 
+        content = browser_search()
+    else
+        local headers =  {
+            ["User-Agent"] = kiko.browser.ua(),
+            ["Cookie"] = cookie_str,
+        }
+        local err, reply = kiko.httpget(baseUrl, query, headers)
+        if err ~= nil then
+            content = browser_search()
+        else
+            content = reply["content"]
+        end
+    end
+
     local _, _, epContent = string.find(content, "<section class=\"season\">(.-)</section>")
     local results = {}
     if epContent ~= nil then
@@ -172,20 +218,16 @@ end
 function danmu(source)
     local err, source_obj = kiko.json2table(source["data"])
     if err ~= nil then error(err) end
-    local headers = {}
-    if #settings["user_agent"] > 0 and #settings["cookie"] > 0 then
-        headers = {
-            ["User-Agent"] = settings["user_agent"],
-            ["Cookie"] = settings["cookie"],
-        }
-    end
-    local danmuUrl = "https://ani.gamer.com.tw/ajax/danmuGet.php"
-    local postdata = string.format("sn=%s", source_obj["sn"])
-    headers["Content-Length"] = tostring(#postdata)
-    local err, reply = kiko.httppost(danmuUrl, postdata, headers)
+    
+    local danmuUrl = "https://api.gamer.com.tw/anime/v1/danmu.php"
+    local query = {
+        ["videoSn"]=source_obj["sn"],
+        ["geo"]="TW,HK",
+    }
+    local err, reply = kiko.httpget(danmuUrl, query)
     if err ~= nil then error(err) end
-    local danmuContent = reply["content"]
-    local err, array = kiko.json2table(danmuContent)
+    local err, obj = kiko.json2table(reply["content"])
+    local array = obj["data"]["danmu"]
     if err ~= nil or array == nil then error(err) end
 
     local danmus = {}

@@ -2,7 +2,7 @@ info = {
     ["name"] = "Mikan",
     ["id"] = "Kikyou.r.Mikan",
 	["desc"] = "Mikan Project资源搜索, mikanani.me",
-	["version"] = "0.1",
+	["version"] = "0.2",
 }
 function unescape(str)
     str = string.gsub( str, '&lt;', '<' )
@@ -32,7 +32,7 @@ function search(keyword,page)
     --  url: string
     --  query: table, {["key"]=value} value: string
     --  header: table, {["key"]=value} value: string
-    local err,reply=kiko.httpget("https://mikanani.me/Home/Search",{["searchstr"]=keyword})
+    local err,reply=kiko.httpget("https://mikanime.tv/Home/Search",{["searchstr"]=keyword})
     if err~=nil then error(err) end
     local content = reply["content"]
     local rowPos=1

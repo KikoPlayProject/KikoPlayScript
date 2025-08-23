@@ -1,5 +1,5 @@
 # <img src="kikoplay.png" width=24 /> KikoPlay 脚本开发参考 
-2023.12 By Kikyou，本文档适用于KikoPlay 1.0.1及以上版本
+2025.08 By Kikyou，本文档适用于KikoPlay 2.0.0及以上版本
 
 ## 目录
  - [脚本类型](#脚本类型)
@@ -25,8 +25,9 @@
  
 
 ## 脚本类型
-KikoPlay中有4类脚本：
+KikoPlay中有5类脚本：
  - 弹幕脚本： 位于script/danmu目录下，提供弹幕搜索、下载、发送弹幕等功能
+ - 文件识别脚本：位于script/match目录下，提供文件识别功能，将文件识别到动画的某个剧集上，2.0.0新增
  - 资料脚本：位于script/library目录下，提供动画（或者其他类型的条目）搜索、详细信息获取、分集信息获取、标签获取、自动关联等功能
  - 资源脚本：位于script/resource目录下，提供资源搜索功能
  - 番组日历脚本：位于script/bgm_calendar，提供每日放送列表。0.8.2起新增
@@ -41,6 +42,7 @@ info = {
   ["desc"] = "Bilibili弹幕脚本",   --描述信息
   ["version"] = "0.1",            --版本信息
   ["min_kiko"] = "0.9.1",         --可选，0.9,1起新增，最低要求的KikoPlay版本
+  ["label_color"] = "0xDC478A",   --可选，弹幕脚本标签颜色，2.0.0新增
 }
 ```
 脚本可以包含设置项，这些项目可以通过KikoPlay “设置”对话框-“脚本”页面-脚本列表的右键菜单-“设置” 进行设置
@@ -185,8 +187,20 @@ Label     = 5    仅展示标题
 
     发送弹幕函数，脚本可以自行选择sources中的弹幕来源进行发送，注意，只有`canlaunch`返回`true`才会调用这个函数
 
+### 文件识别脚本
+文件识别脚本需要提供`match`函数。
+
+尽管下文使用“动画”一词，但视频类型并不局限于动画。
+ - `function match(path)`
+
+    > `path`：文件路径
+    >
+    > 返回：[MatchResult](#matchresult) 
+
+    识别文件所属动画的剧集。
+
 ### 资料脚本
-资料脚本需要至少提供`match`或者同时提供`search`和`getep`函数。
+资料脚本需要提供`search`和`getep`函数。
 
 尽管下文使用“动画”一词，但视频类型并不局限于动画。
  - `function search(keyword, <options>)`
@@ -224,14 +238,6 @@ Label     = 5    仅展示标题
     > 返回： Array[string]，Tag列表
 
     KikoPlay支持多级Tag，用"/"分隔，你可以返回类似“动画制作/A1-Pictures”这样的标签
-
- - `function match(path)`
-
-    > `path`：文件路径
-    >
-    > 返回：[MatchResult](#matchresult) 
-
-    实现自动关联功能。提供此函数的脚本会被加入到播放列表的“关联”菜单中
 
  - `menus`
 
@@ -493,9 +499,11 @@ KikoPlay提供的API位于kiko表中，通过kiko.xxx调用
    > 返回： Table，包含：
    >```lua
    > {
-   >    ["os"]=string,         --操作系统
-   >    ["os_version"]=string, --系统版本
-   >    ["kikoplay"]=string    --KikoPlay版本
+   >    ["os"]=string,          --操作系统
+   >    ["os_version"]=string,  --系统版本
+   >    ["kikoplay"]=string,    --KikoPlay版本
+   >    ["data_path"]=string,   --KikoPlay数据目录
+   >    ["kservice"]=boolean,   --是否包含KService，如果包含=true，不包含则没有这一项
    > }
    >
 
@@ -556,6 +564,7 @@ KikoPlay提供的API位于kiko表中，通过kiko.xxx调用
         xmlreader:readnext()
     end
     ```
+
  - `htmlparser(str)`
 
    > `str`：string，html内容
@@ -588,6 +597,7 @@ KikoPlay提供的API位于kiko表中，通过kiko.xxx调用
         parser:readnext()
     end
     ```
+
 - `regex(str, option)`
 
    > `str`：string，正则表达式内容
@@ -638,6 +648,7 @@ KikoPlay提供的API位于kiko表中，通过kiko.xxx调用
         print("gmatch: ", w)
     end
     ```
+
 1.0.0起增加了一些常用的字符串函数，位于`string`中：
  - `trim(str)`
    > `str`：string
@@ -711,6 +722,7 @@ KikoPlay提供的API位于kiko表中，通过kiko.xxx调用
         string.CODE_LOCAL -- 本地编码
         string.CODE_UTF8 -- utf-8编码
     ```
+
 1.0.1版本提供了一些操作文件和目录的函数，位于`kiko.dir`中：
  - `function fileinfo(path)`
    > `path`：string，路径
@@ -790,6 +802,68 @@ KikoPlay提供的API位于kiko表中，通过kiko.xxx调用
     kiko.dir.SORT_REVERSE
     kiko.dir.SORT_IGNORE_CASE
    ```
+
+2.0.0引入浏览器对象，底层基于QWebEngineView，通过`kiko.browser.create`函数创建一个browser对象。
+ - `function create()`
+   >
+   > 返回：browser对象
+
+另外几个位于`kiko.browser`的函数：
+ - `function cookie(domain, path)`
+   > `domain`: string，获取指定domain的cookie，或者为空（获取全部cookie）
+   >
+   > `path`: string，获取指定domain下具体path的cookie，或者为空（获取domain全部cookie）
+   >
+   > 返回：string/table
+
+   获取cookie，根据是否设置domain/path返回table或string：string（指定了domain和path）；table: {path: cookie, ...} （仅仅指定domain）；table: {domain: {path: cookie, ...}} （未指定domain和path）
+
+ - `function ua()`
+   >
+   > 返回：string
+
+   获取浏览器对象的user agent
+
+ - `function setua(user_agent)`
+   > `user_agent`: string
+   > 
+   > 返回：空
+
+   设置浏览器对象的user agent，影响全部实例
+
+browser对象方法：
+ - `function load(url, params, timeout)`
+   > `url`: string，地址
+   >
+   > `params`：table，url query参数，可以为空
+   >
+   > `timeout`：number，超时时间，可以为空，默认15s
+   >
+   > 返回：bool，是否加载成功
+
+   阻塞加载url
+
+- `function html()`
+   > 
+   > 返回：string，当前页面html
+
+   获取当前页面html
+
+ - `function runjs(js)`
+   > `js`: string，要执行的js代码
+   >
+   > 返回：js代码返回结果
+
+   在当前页面阻塞执行js并返回结果
+
+ - `function show(tip)`
+   > `tip`: string，提示信息，可惜
+   >
+   > 返回：空
+
+   弹出窗口显示网页
+
+
     
 ## 数据类型
 

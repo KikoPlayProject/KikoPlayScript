@@ -2,7 +2,9 @@ info = {
     ["name"] = "腾讯视频",
     ["id"] = "Kikyou.d.Tencent",
 	["desc"] = "腾讯视频弹幕脚本",
-	["version"] = "0.3"
+	["version"] = "0.4",
+    ["min_kiko"] = "2.0.0",
+    ["label_color"] = "0xD39900",
 }
 
 supportedURLsRe = {
@@ -10,49 +12,8 @@ supportedURLsRe = {
 }
 
 sampleSupporedURLs = {
-    "https://v.qq.com/x/cover/gtn6ik9kapbiqm0.html",
     "https://v.qq.com/x/cover/gtn6ik9kapbiqm0/o0029t5qpp8.html"
 }
-
-function string.split(str, sep)
-    local pStart = 1
-    local nSplitIndex = 1
-    local nSplitArray = {}
-    while true do
-        local pEnd = string.find(str, sep, pStart)
-        if pEnd == pStart then
-            pStart = pEnd + string.len(sep)
-        else
-            if not pEnd then
-                nSplitArray[nSplitIndex] = string.sub(str, pStart, string.len(str))
-                break
-            end
-            nSplitArray[nSplitIndex] = string.sub(str, pStart, pEnd - 1)
-            pStart = pEnd + string.len(sep)
-            nSplitIndex = nSplitIndex + 1
-        end
-    end
-    return nSplitArray
-end
-
-function string.startsWith(str, substr)  
-    if str == nil or substr == nil then  return false end  
-    if string.find(str, substr) ~= 1 then  
-        return false  
-    else  
-        return true  
-    end  
-end
-
-function string.lastIndexOf(str, substr)
-    local i, j
-    local k = 0
-    repeat
-        i = j
-        j, k = string.find(str, substr, k + 1, true)
-    until j == nil
-    return i
-end
 
 function str2time(time_str)
     local timeArray = string.split(time_str, ':')
@@ -62,60 +23,6 @@ function str2time(time_str)
         base = base + 1
     end
     return duration
-end
-
-function search(keyword)
-    local err, reply = kiko.httpget("https://v.qq.com/x/search/", {["q"]=keyword})
-    if err ~= nil then error(err) end
-    local content = reply["content"]
-    local parser = kiko.htmlparser(content)
-    local spos, epos = string.find(content, "<div class=\"%s*result_item%s*result_item_[vh]")
-    local results = {}
-    while spos do
-        parser:seekto(spos-1)
-        parser:readnext()
-        local isItem_v = string.find(parser:curproperty("class"), "result_item_v")
-        repeat
-            parser:readnext()
-        until parser:curproperty("class")=="result_title"
-        parser:readnext()
-        local titleURL = parser:curproperty("href")
-        if string.startsWith(titleURL, "https?://v.qq.com") and not string.startsWith(titleURL, "https?://v.qq.com/search_redirect.html") then
-            local title = parser:readuntil("a", false)
-            local title = string.gsub(title, "<.->", "")
-            local title = string.gsub(title, "[\n\t]", "")
-            if isItem_v then
-                repeat
-                    parser:readnext()
-                until parser:curproperty("class")=="item" or parser:curproperty("class")=="result_btn_line" or parser:curproperty("class")=="result_video_fragment"
-                while parser:curproperty("class")=="item" do
-                    parser:readnext()
-                    local url = parser:curproperty("href")
-                    if string.startsWith(url, "https?://v.qq.com") then
-                        local data = { ["url"] = url }
-                        local _, data_str = kiko.table2json(data)
-                        table.insert(results, {
-                            ["title"] = title .. " " .. parser:readcontent(),
-                            ["data"] = data_str
-                        })
-                    end
-                    repeat
-                        parser:readnext()
-                    until parser:curnode()=="div"
-                    parser:readnext()
-                end
-            else
-                local data = { ["url"] = titleURL }
-                local _, data_str = kiko.table2json(data)
-                table.insert(results, {
-                    ["title"] = title,
-                    ["data"] = data_str
-                })
-            end
-        end
-        spos, epos = string.find(content, "<div class=\"%s*result_item%s*result_item_[vh]", epos)
-    end
-    return results
 end
 
 function epinfo(source)
@@ -162,7 +69,7 @@ function decodeDanmu(content, danmuList)
     if dmArray == nil then return danmuList end
     for _, dm in ipairs(dmArray) do
         local text = dm["content"]
-        if string.startsWith("VIP :") then
+        if string.startswith(text, "VIP :") then
             text = string.sub(text, 6)
         end
         local dmType = 0
@@ -230,11 +137,18 @@ function danmu(source)
     local err, source_obj = kiko.json2table(source["data"])
     if err ~= nil then error(err) end
 
+    if source_obj["vid"] ~= nil then
+        return nil, downloadDanmu(source_obj["vid"])
+    end
+
     local url = source_obj["url"]
     if url == nil then return nil, {} end
-    local s, e = string.lastIndexOf(url, '/'), string.lastIndexOf(url, '.')
+    local s, e = string.lastindexof(url, '/'), string.lastindexof(url, '.')
     if s == nil or e == nil then error("vid not found") end
     local vid = string.sub(url, s + 1, e - 1)
     if vid == nil or #vid == 0 then error("vid not found") end
+    source_obj["vid"] = vid
+    local _, data_str = kiko.table2json(source_obj)
+    source["data"] = data_str
     return source, downloadDanmu(vid)
 end

@@ -2,7 +2,8 @@ info = {
     ["name"] = "漫猫BT",
     ["id"] = "Kikyou.r.Comicat",
 	["desc"] = "漫猫BT搜索, www.comicat.org",
-	["version"] = "0.1",
+	["version"] = "0.2",
+    ["min_kiko"] = "2.0.0",
 }
 --return: 
 --  errorInfo: nil/string
@@ -10,11 +11,23 @@ info = {
 --  searchResult: table, {Item}
 --      Item:  table {"title"="","size"="","time"="","magnet"="",url=""}
 function search(keyword,page)
-    local err, reply=kiko.httpget("http://www.comicat.org/search.php",{["keyword"]=keyword,["page"]=page})
-    if err~=nil then error(err) end
-    local content = reply["content"]
+    local query = {
+        ["keyword"]=keyword,
+        ["page"]=page,
+    }
 
-    local _,_,pageCount=string.find(content,"<span class=\"text_bold\">.-共找到(%d+)条匹配资源</span>")
+    local b = kiko.browser.create()
+    local succ = b:load("http://www.comicat.org/search.php", query)
+    local content = b:html()
+
+    local _, _, pageCount = string.find(content,"<span class=\"text_bold\">.-共找到(%d+)条匹配资源</span>")
+    if pageCount == nil then
+        -- 需要验证
+        b:show("验证成功跳转后关闭窗口")
+        content = b:html()
+    end
+
+    _, _, pageCount = string.find(content,"<span class=\"text_bold\">.-共找到(%d+)条匹配资源</span>")
     if pageCount==nil then
         error("Comicat WebPage Decode Failed")
     end

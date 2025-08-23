@@ -2,8 +2,9 @@ info = {
     ["name"] = "Bilibili",
     ["id"] = "Kikyou.d.Bilibili",
 	["desc"] = "Bilibili弹幕脚本",
-	["version"] = "0.3.1",
-    ["min_kiko"] = "1.0.0"
+	["version"] = "0.3.2",
+    ["min_kiko"] = "2.0.0",
+    ["label_color"] = "0xDC478A",
 }
 
 supportedURLsRe = {
@@ -178,13 +179,15 @@ function epinfo(source)
         local obj = obj["data"]
         local aid = string.format("%d", obj["aid"])
         local results = {}
-        for _, bobj in ipairs(obj["pages"]) do
+        for i, bobj in ipairs(obj["pages"]) do
             local data = {
-                ["aid"] = aid,
                 ["cid"] = string.format("%d", bobj["cid"]),
-                ["bvid"] = bvid,
                 ["stype"] = "video"
             }
+            if i == 1 then
+                data["aid"] = aid
+                data["bvid"] = obj["bvid"]
+            end
             local _, data_str = kiko.table2json(data)
             table.insert(results, {
                 ["title"] = bobj["part"],

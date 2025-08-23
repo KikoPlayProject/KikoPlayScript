@@ -2,8 +2,9 @@ info = {
     ["name"] = "优酷",
     ["id"] = "Kikyou.d.youku",
     ["desc"] = "优酷弹幕脚本",
-    ["version"] = "0.1",
-    ["min_kiko"] = "0.9.2"
+    ["version"] = "0.2",
+    ["min_kiko"] = "2.0.0",
+    ["label_color"] = "0x2683FF",
 }
 
 supportedURLsRe = {
@@ -27,32 +28,27 @@ settings = {
     }
 }
 
-function string.split(str, sep)
-    local pStart = 1
-    local nSplitIndex = 1
-    local nSplitArray = {}
-    while true do
-        local pEnd = string.find(str, sep, pStart)
-        if pEnd == pStart then
-            pStart = pEnd + string.len(sep)
-        else
-            if not pEnd then
-                nSplitArray[nSplitIndex] = string.sub(str, pStart, string.len(str))
-                break
-            end
-            nSplitArray[nSplitIndex] = string.sub(str, pStart, pEnd - 1)
-            pStart = pEnd + string.len(sep)
-            nSplitIndex = nSplitIndex + 1
-        end
-    end
-    return nSplitArray
+function get_ts(date_str)
+    --date_str = "2022-10-17 18:23:26"
+    local year, month, day, hour, min, sec = date_str:match("(%d+)-(%d+)-(%d+) (%d+):(%d+):(%d+)")
+    local timestamp = os.time({
+        year = tonumber(year),
+        month = tonumber(month),
+        day = tonumber(day),
+        hour = tonumber(hour),
+        min = tonumber(min),
+        sec = tonumber(sec),
+    })
+    return timestamp
 end
+
 function escape(str)
    str = string.gsub (str, "([^0-9a-zA-Z !'()*._~-])", -- locale independent
       function (c) return string.format ("%%%02X", string.byte(c)) end)
    str = string.gsub (str, " ", "+")
    return str
 end
+
 function get_cookies(cookie_str)
     local cookies = {}
     if cookie_str == nil then return cookies end
@@ -68,6 +64,7 @@ function get_cookies(cookie_str)
     end
     return cookies
 end
+
 function get_video_info(vid)
     local info_url = string.format("https://openapi.youku.com/v2/videos/show.json?client_id=53e6cc67237fc59a&package=com.huawei.hwvplayer.youku&ext=show&video_id=%s", vid)
     local err, reply = kiko.httpget(info_url, {}, {["User-Agent"] = settings["user_agent"]})
@@ -80,6 +77,7 @@ function get_video_info(vid)
     if title == nil then title = "unknown" end
     return title, duration
 end
+
 function download_seg(cna, vid, seg, danmuList)
     local msg = {
         ["ctime"] = tostring(os.time() * 1000),
@@ -170,7 +168,7 @@ function download_seg(cna, vid, seg, danmuList)
         table.insert(danmuList, {
             ["text"]=dm["content"],
             ["time"]=dm["playat"]-skip_time,
-            ["date"]=tostring(math.floor(dm["createtime"] / 1000)),
+            ["date"]=tostring(get_ts(dm["createtime"])),
             ["color"]=color,
             ["fontsize"]=size,
             ["sender"]="[Youku]" .. dm["uid2"]
@@ -204,7 +202,8 @@ function danmu(source)
     if err ~= nil then error(err) end
 
     local err, reply = kiko.httpget("https://log.mmstat.com/eg.js", {}, {["User-Agent"] = settings["user_agent"], ["Accept-Encoding"] = "gzip, deflate", ["Accept"] = "*/*", ["Connection"] = "keep-alive"})
-    local cookies = get_cookies(reply["headers"]["Set-Cookie"])
+    local cookie_header = reply["headers"]["Set-Cookie"] or reply["headers"]["set-cookie"]
+    local cookies = get_cookies(cookie_header)
     if cookies["cna"] == nil then error("get cna cookie failed") end
 
     local segs = math.floor(source_obj["duration"] / 60) + 1
