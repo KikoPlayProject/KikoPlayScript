@@ -161,7 +161,7 @@ function download_seg(cna, vid, seg, danmuList)
             if pobj["color"] ~= nil then
                 color = tonumber(pobj["color"])
             end
-            if tonumber(pobj["size"]) > 2 then
+            if pobj["size"] ~= nil and tonumber(pobj["size"]) > 2 then
                 size = 2
             end
         end    
