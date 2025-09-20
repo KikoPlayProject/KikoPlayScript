@@ -16,12 +16,17 @@ sampleSupporedURLs = {
 }
 
 scriptmenus = {
-    {["title"]="打开动画疯网站", ["id"]="open_gamer"}
+    {["title"]="打开动画疯网站", ["id"]="open_gamer"},
+    {["title"]="登录", ["id"]="gamer_login"},
 }
 
 function scriptmenuclick(menuid)
     if menuid == "open_gamer" then
         kiko.execute(true,  "cmd", {"/c", "start", "https://ani.gamer.com.tw/"})
+    elseif menuid == "gamer_login" then
+        local b = kiko.browser.create()
+        local succ = b:load("https://user.gamer.com.tw/login.php")
+        b:show("登录成功后关闭页面")
     end
 end
 
@@ -224,7 +229,18 @@ function danmu(source)
         ["videoSn"]=source_obj["sn"],
         ["geo"]="TW,HK",
     }
-    local err, reply = kiko.httpget(danmuUrl, query)
+
+    local cookies = kiko.browser.cookie(".gamer.com.tw")
+    local cookie_str = ""
+    for k, v in pairs(cookies) do
+        cookie_str = cookie_str  .. string.format("%s=%s; ", k, v)
+    end
+    local headers =  {
+        ["User-Agent"] = kiko.browser.ua(),
+        ["Cookie"] = cookie_str,
+    }
+
+    local err, reply = kiko.httpget(danmuUrl, query, headers)
     if err ~= nil then error(err) end
     local err, obj = kiko.json2table(reply["content"])
     local array = obj["data"]["danmu"]
