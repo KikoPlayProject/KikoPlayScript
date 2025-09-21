@@ -170,24 +170,6 @@ Label     = 5    仅展示标题
 
     从`url`中获取弹幕来源信息
 
- - `function canlaunch(sources)`
-
-    > `sources`： Array[[DanmuSource](#danmusource)]
-    >
-    > 返回： bool
-
-     当脚本支持发送弹幕时，需要提供这个函数，检查sources中是否有可发出弹幕的弹幕来源
-
-  - `function launch(sources, comment)`
-    
-    > `sources`： Array[[DanmuSource](#danmusource)]
-    >
-    > `comment`： [DanmuComment](#danmucomment)
-    >
-    > 返回：无错误返回`nil`，否则返回错误信息string
-
-    发送弹幕函数，脚本可以自行选择sources中的弹幕来源进行发送，注意，只有`canlaunch`返回`true`才会调用这个函数
-
 ### 文件识别脚本
 文件识别脚本需要提供`match`函数。
 

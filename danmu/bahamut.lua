@@ -20,6 +20,8 @@ scriptmenus = {
     {["title"]="登录", ["id"]="gamer_login"},
 }
 
+cur_dm_cookie = ''
+
 function scriptmenuclick(menuid)
     if menuid == "open_gamer" then
         kiko.execute(true,  "cmd", {"/c", "start", "https://ani.gamer.com.tw/"})
@@ -27,6 +29,8 @@ function scriptmenuclick(menuid)
         local b = kiko.browser.create()
         local succ = b:load("https://user.gamer.com.tw/login.php")
         b:show("登录成功后关闭页面")
+        cur_dm_cookie = b:runjs("document.cookie")
+        kiko.log(cur_dm_cookie)
     end
 end
 
@@ -230,15 +234,20 @@ function danmu(source)
         ["geo"]="TW,HK",
     }
 
-    local cookies = kiko.browser.cookie(".gamer.com.tw")
-    local cookie_str = ""
-    for k, v in pairs(cookies) do
-        cookie_str = cookie_str  .. string.format("%s=%s; ", k, v)
-    end
     local headers =  {
         ["User-Agent"] = kiko.browser.ua(),
-        ["Cookie"] = cookie_str,
     }
+
+    if #cur_dm_cookie > 0 then
+        headers["Cookie"] = cur_dm_cookie
+    else
+        local cookies = kiko.browser.cookie(".gamer.com.tw")
+        local cookie_str = ""
+        for k, v in pairs(cookies) do
+            cookie_str = cookie_str  .. string.format("%s=%s; ", k, v)
+        end
+        headers["Cookie"] = cookie_str
+    end
 
     local err, reply = kiko.httpget(danmuUrl, query, headers)
     if err ~= nil then error(err) end

@@ -316,26 +316,3 @@ function danmu(source)
     end
     return nil, danmus
 end
-
-function canlaunch(sources)
-    for _, src in pairs(sources) do
-        if src["scriptId"]==info["id"] then
-            local err, source_obj = kiko.json2table(src["data"])
-            if err == nil and source_obj["cid"] ~= nil then 
-                return true
-            end
-        end
-    end
-    return false
-end
-
-function launch(sources, comment)
-    kiko.log(sources)
-    kiko.log(comment)    
-    local status, text = kiko.dialog({
-        ["title"]="Bilibili",
-        ["tip"]="弹幕发送测试",
-        ["text"]="(并没有真实发送弹幕)",
-    })
-    return nil
-end 

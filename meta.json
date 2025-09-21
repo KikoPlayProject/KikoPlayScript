@@ -81,6 +81,15 @@
         "version": "0.2"
     },
     {
+        "desc": "5dm弹幕脚本，www.5dm.link",
+        "id": "Kikyou.d.5dm",
+        "min_kiko": "2.0.0",
+        "name": "5dm",
+        "type": "danmu",
+        "url": "https://raw.githubusercontent.com/KikoPlayProject/KikoPlayScript/master/danmu/5dm.lua",
+        "version": "0.1"
+    },
+    {
         "desc": "异世界动漫弹幕脚本，www.dmmiku.com",
         "id": "Kikyou.d.ysjdm",
         "min_kiko": "2.0.0",
@@ -99,13 +108,22 @@
         "version": "0.3.1"
     },
     {
-        "desc": "弹弹Play动画关联脚本，利用弹弹Play API根据文件信息获取匹配的动画信息",
+        "desc": "弹弹Play动画识别脚本，利用弹弹Play API根据文件信息获取匹配的动画信息",
         "id": "Kikyou.m.DDMatch",
         "min_kiko": "2.0.0",
         "name": "弹弹Match",
         "type": "match",
         "url": "https://raw.githubusercontent.com/KikoPlayProject/KikoPlayScript/master/library/dandan_match.lua",
         "version": "0.1"
+    },
+    {
+        "desc": "TMDb+ 文件识别脚本",
+        "id": "Kikyou.m.TMDb",
+        "min_kiko": "2.0.0",
+        "name": "TMDB文件识别",
+        "type": "match",
+        "url": "https://raw.githubusercontent.com/KikoPlayProject/KikoPlayScript/master/library/tmdb_match.lua",
+        "version": "0.2.29"
     },
     {
         "desc": "豆瓣电影脚本，从 movie.douban.com 中获取视频信息",
