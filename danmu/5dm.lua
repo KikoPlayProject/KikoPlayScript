@@ -2,13 +2,13 @@ info = {
     ["name"] = "5dm",
     ["id"] = "Kikyou.d.5dm",
 	["desc"] = "5dm弹幕脚本",
-	["version"] = "0.1",
+	["version"] = "0.2",
     ["min_kiko"] = "2.0.0",
     ["label_color"] = "0xEB5D56",
 }
 
 supportedURLsRe = {
-    "(https?://)?www\\.5dm\\.link/bangumi/dv(\\d+)?(link=[0-9]+)?"
+    "(https?://)?www\\.5dm\\.link/(bangumi|end)/dv(\\d+)(\\?(link=[0-9]+)?)?"
 }
 
 sampleSupporedURLs = {
@@ -73,7 +73,11 @@ function urlinfo(url)
         ["https?://www%.5dm%.link/bangumi/dv(%d+)%?link=(%d+)"]="dv_link",
         ["www%.5dm%.link/bangumi/dv(%d+)%?link=(%d+)"]="dv_link",
         ["https?://www%.5dm%.link/bangumi/dv(%d+)"]="dv",
-        ["www%.5dm%.link/bangumi/dv(%d+)"]="dv"
+        ["www%.5dm%.link/bangumi/dv(%d+)"]="dv",
+        ["https?://www%.5dm%.link/end/dv(%d+)%?link=(%d+)"]="dv_link",
+        ["www%.5dm%.link/end/dv(%d+)%?link=(%d+)"]="dv_link",
+        ["https?://www%.5dm%.link/end/dv(%d+)"]="dv",
+        ["www%.5dm%.link/end/dv(%d+)"]="dv",
     }
     local matched = nil
     for pv, k in pairs(pattens) do
