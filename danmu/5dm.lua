@@ -2,17 +2,19 @@ info = {
     ["name"] = "5dm",
     ["id"] = "Kikyou.d.5dm",
 	["desc"] = "5dm弹幕脚本",
-	["version"] = "0.2",
+	["version"] = "0.3",
     ["min_kiko"] = "2.0.0",
     ["label_color"] = "0xEB5D56",
 }
 
 supportedURLsRe = {
-    "(https?://)?www\\.5dm\\.link/(bangumi|end)/dv(\\d+)(\\?(link=[0-9]+)?)?"
+    "(https?://)?www\\.5dm\\.link/(bangumi|end)/dv(\\d+)(\\?(link=[0-9]+)?)?",
+    "(https?://)?www\\.5dm\\.link/(bangumi|end)/dv(\\d+)(\\?line=\\d+)&(link=[0-9]+)?"
 }
 
 sampleSupporedURLs = {
-    "https://www.5dm.link/bangumi/dv56062?link=6"
+    "https://www.5dm.link/bangumi/dv56062?link=6",
+    "https://www.5dm.link/end/dv17582?line=1&link=2"
 }
 
 function unescape(str)
@@ -46,7 +48,7 @@ function epinfo(source)
         while not parser:atend() do
             if parser:curnode()=="a" and parser:start() then
                 local href = parser:curproperty("href")
-                local _, _, dv, link = string.find(href, "dv(%d+)%?link=(%d+)")
+                local _, _, dv, link = string.find(href, "dv(%d+)%?line=1&link=(%d+)")
                 if dv ~= nil and link ~= nil then
                     local data = {
                         ["dv"] = dv,
@@ -72,10 +74,14 @@ function urlinfo(url)
     local pattens = {
         ["https?://www%.5dm%.link/bangumi/dv(%d+)%?link=(%d+)"]="dv_link",
         ["www%.5dm%.link/bangumi/dv(%d+)%?link=(%d+)"]="dv_link",
+        ["https?://www%.5dm%.link/bangumi/dv(%d+)%?line=%d+&link=(%d+)"]="dv_link",
+        ["www%.5dm%.link/bangumi/dv(%d+)%?line=%d+&link=(%d+)"]="dv_link",
         ["https?://www%.5dm%.link/bangumi/dv(%d+)"]="dv",
         ["www%.5dm%.link/bangumi/dv(%d+)"]="dv",
         ["https?://www%.5dm%.link/end/dv(%d+)%?link=(%d+)"]="dv_link",
         ["www%.5dm%.link/end/dv(%d+)%?link=(%d+)"]="dv_link",
+        ["https?://www%.5dm%.link/end/dv(%d+)%?line=%d+&link=(%d+)"]="dv_link",
+        ["www%.5dm%.link/end/dv(%d+)%?line=%d+&link=(%d+)"]="dv_link",
         ["https?://www%.5dm%.link/end/dv(%d+)"]="dv",
         ["www%.5dm%.link/end/dv(%d+)"]="dv",
     }
@@ -179,13 +185,15 @@ function danmu(source)
     end
 
     local url = "https://www.5dm.link/bangumi/dv" .. source_obj["dv"]
+    local query = {}
     if source_obj["link"] ~= nil then
-        url = url .. "?link=" .. source_obj["link"]
+        query['line'] = "1"
+        query["link"] = source_obj["link"]
     end
     local headers =  {
         ["User-Agent"] = kiko.browser.ua(),
     }
-    local err, reply = kiko.httpget(url, {}, headers)
+    local err, reply = kiko.httpget(url, query, headers)
 
     if err ~= nil then error(err) end
     local content = reply["content"]

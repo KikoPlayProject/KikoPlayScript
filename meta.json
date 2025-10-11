@@ -87,7 +87,7 @@
         "name": "5dm",
         "type": "danmu",
         "url": "https://raw.githubusercontent.com/KikoPlayProject/KikoPlayScript/master/danmu/5dm.lua",
-        "version": "0.2"
+        "version": "0.3"
     },
     {
         "desc": "异世界动漫弹幕脚本，www.dmmiku.com",
