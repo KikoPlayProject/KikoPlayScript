@@ -86,7 +86,7 @@ function search(keyword)
         local animeTitle = item["animeTitle"]
         local eps = item["episodes"]
         if eps ~= nil then
-            local _, data_str = kiko.table2json(eps)
+            local _, data_str = kiko.table2json(eps, 'compact')
             table.insert(results, {
                 ["title"] = animeTitle,
                 ["desc"] = string.format("共 %d 集", #eps),

@@ -2,29 +2,29 @@
     {
         "desc": "AcFun弹幕脚本",
         "id": "Kikyou.d.AcFun",
-        "min_kiko": "2.0.0",
+        "min_kiko": "2.1.0",
         "name": "AcFun",
         "type": "danmu",
         "url": "https://raw.githubusercontent.com/KikoPlayProject/KikoPlayScript/master/danmu/acfun.lua",
-        "version": "0.3"
+        "version": "0.3.1"
     },
     {
         "desc": "巴哈姆特动画疯弹幕脚本",
         "id": "Kikyou.d.Gamer",
-        "min_kiko": "2.0.0",
+        "min_kiko": "2.1.0",
         "name": "动画疯",
         "type": "danmu",
         "url": "https://raw.githubusercontent.com/KikoPlayProject/KikoPlayScript/master/danmu/bahamut.lua",
-        "version": "0.2"
+        "version": "0.2.1"
     },
     {
         "desc": "Bilibili弹幕脚本",
         "id": "Kikyou.d.Bilibili",
-        "min_kiko": "2.0.0",
+        "min_kiko": "2.1.0",
         "name": "Bilibili",
         "type": "danmu",
         "url": "https://raw.githubusercontent.com/KikoPlayProject/KikoPlayScript/master/danmu/bilibili.lua",
-        "version": "0.3.2"
+        "version": "0.4"
     },
     {
         "desc": "弹弹Play弹幕脚本",
@@ -38,29 +38,29 @@
     {
         "desc": "爱奇艺弹幕脚本",
         "id": "Kikyou.d.Iqiyi",
-        "min_kiko": "2.0.0",
+        "min_kiko": "2.1.0",
         "name": "爱奇艺",
         "type": "danmu",
         "url": "https://raw.githubusercontent.com/KikoPlayProject/KikoPlayScript/master/danmu/iqiyi.lua",
-        "version": "0.4"
+        "version": "0.4.1"
     },
     {
         "desc": "芒果TV弹幕脚本",
         "id": "Kikyou.d.mgtv",
-        "min_kiko": "2.0.0",
+        "min_kiko": "2.1.0",
         "name": "芒果TV",
         "type": "danmu",
         "url": "https://raw.githubusercontent.com/KikoPlayProject/KikoPlayScript/master/danmu/mgtv.lua",
-        "version": "0.2"
+        "version": "0.2.1"
     },
     {
         "desc": "腾讯视频弹幕脚本",
         "id": "Kikyou.d.Tencent",
-        "min_kiko": "2.0.0",
+        "min_kiko": "2.1.0",
         "name": "腾讯视频",
         "type": "danmu",
         "url": "https://raw.githubusercontent.com/KikoPlayProject/KikoPlayScript/master/danmu/tencent.lua",
-        "version": "0.4"
+        "version": "0.4.1"
     },
     {
         "desc": "Tucao弹幕脚本",
@@ -74,11 +74,11 @@
     {
         "desc": "优酷弹幕脚本",
         "id": "Kikyou.d.youku",
-        "min_kiko": "2.0.0",
+        "min_kiko": "2.1.0",
         "name": "优酷",
         "type": "danmu",
         "url": "https://raw.githubusercontent.com/KikoPlayProject/KikoPlayScript/master/danmu/youku.lua",
-        "version": "0.2"
+        "version": "0.2.1"
     },
     {
         "desc": "5dm弹幕脚本，www.5dm.link",
@@ -101,11 +101,11 @@
     {
         "desc": "Bangumi脚本，从bgm.tv中获取动画信息",
         "id": "Kikyou.l.Bangumi",
-        "min_kiko": "0.9.1",
+        "min_kiko": "2.1.0",
         "name": "Bangumi",
         "type": "library",
         "url": "https://raw.githubusercontent.com/KikoPlayProject/KikoPlayScript/master/library/bangumi.lua",
-        "version": "0.3.1"
+        "version": "0.3.2"
     },
     {
         "desc": "弹弹Play动画识别脚本，利用弹弹Play API根据文件信息获取匹配的动画信息",

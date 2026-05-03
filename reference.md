@@ -44,6 +44,7 @@ info = {
   ["version"] = "0.1",            --版本信息
   ["min_kiko"] = "0.9.1",         --可选，0.9,1起新增，最低要求的KikoPlay版本
   ["label_color"] = "0xDC478A",   --可选，弹幕脚本标签颜色，2.0.0新增
+  ["icon"] = "",                  --可选，脚本svg图标，2.1.0新增
 }
 ```
 脚本可以包含设置项，这些项目可以通过KikoPlay “设置”对话框-“脚本”页面-脚本列表的右键菜单-“设置” 进行设置
@@ -853,14 +854,30 @@ browser对象方法：
 ### DanmuSource
 ```lua
 {
-    ["title"]=string,    --条目标题
-    ["desc"]=string,     --条目描述，可选
-    ["duration"]=number, --时长(s)，可选
-    ["delay"]=number,    --延迟(s)，可选
-    ["data"]=string,     --可以存放一些条目相关的数据，可选
+    ["title"]=string,               --条目标题
+    ["desc"]=string,                --条目描述，可选
+    ["duration"]=number,            --时长(s)，可选
+    ["delay"]=number,               --延迟(s)，可选
+    ["data"]=string,                --可以存放一些条目相关的数据，可选
+    ["valid"]=bool,                 --弹幕源是否有效，2.1新增，可选，默认有效
+    ["url"]=string,                 --源地址（eg. 视频地址）
+    ["tags"]=Array[DanmuSourceTag]  --弹幕源标签，2.1新增，可选
     --当DanmuSource从KikoPlay传递到脚本时，还会提供如下信息
-    ["scriptId"]=string, --脚本ID
+    ["scriptId"]=string,            --脚本ID
 
+}
+```
+### DanmuSourceTag
+```lua
+{
+    ["text"]=string,         --标签文字
+    ["text_color"]=number,   --标签文字颜色，可选，默认0x333333
+    ["bg_color"]=number,     --背景颜色
+    ["tooltip"]=string,      --提示文字
+    ["icon_svg"]=string,     --标签图标svg
+    ["link"]=string,         --点击跳转链接，可选
+    ["key"]=string,          --key，可选，脚本自行设置
+    ["data"]=string,         --data，可选，脚本自行设置
 }
 ```
 ### DanmuComment

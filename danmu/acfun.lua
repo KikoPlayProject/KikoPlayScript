@@ -2,9 +2,10 @@ info = {
     ["name"] = "AcFun",
     ["id"] = "Kikyou.d.AcFun",
 	["desc"] = "AcFun弹幕脚本",
-	["version"] = "0.3",
-    ["min_kiko"] = "2.0.0",
+	["version"] = "0.3.1",
+    ["min_kiko"] = "2.1.0",
     ["label_color"] = "0xFD4C5D",
+    ["icon"] = [[<svg t="1777792807871" class="icon" viewBox="0 0 1091 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="8672" width="64" height="64"><path d="M481.494 0L0 793.885l241.206 152.483 48.974-170.967 382.629-28.657 98.895 189.45 237.509-142.339z m-97.949 593.343l90.585-200.541 102.593 200.541H383.575z" p-id="8673" fill="#e6e6e6"></path></svg>]]
 }
 
 supportedURLsRe = {
@@ -52,14 +53,14 @@ function search(keyword)
             local data = {
                 ["url"] = string.format("https://www.acfun.cn/bangumi/aa%d_36188_%d", bgmId, ep["itemId"]),
             }
-            local _, data_str = kiko.table2json(data)
+            local _, data_str = kiko.table2json(data, 'compact')
             table.insert(eps, {
                 ["title"] = bgmTitle .. " " .. tostring(i),
                 ["data"] = data_str
             })
             i = i+1
         end
-        local _, data_str = kiko.table2json(eps)
+        local _, data_str = kiko.table2json(eps, 'compact')
         table.insert(results, {
             ["title"] = bgmTitle,
             ["desc"] = string.format("共 %d 集", #eps),
@@ -97,7 +98,7 @@ function urlinfo(url)
     local data = {
         ["url"] = url
     }
-    local _, data_str = kiko.table2json(data)
+    local _, data_str = kiko.table2json(data, 'compact')
     table.insert(results, {
         ["title"] = "unknown",
         ["data"] = data_str
@@ -184,7 +185,7 @@ function danmu(source)
     local _, _, vid = string.find(content, "ideoId\":(%d+)")
     if vid == nil then error("视频Id解析失败") end
     source_obj["vid"] = vid
-    local _, data_str = kiko.table2json(source_obj)
+    local _, data_str = kiko.table2json(source_obj, 'compact')
     source["data"] = data_str
 
     local _, _, durationMs = string.find(content, "\"durationMillis\":(%d+)")

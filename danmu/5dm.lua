@@ -54,7 +54,7 @@ function epinfo(source)
                         ["dv"] = dv,
                         ["link"] = link
                     }
-                    local _, data_str = kiko.table2json(data)
+                    local _, data_str = kiko.table2json(data, 'compact')
                     title = parser:readuntil('a', false)
                     title = string.gsub(title,"<.->", "")
                     title = string.trim(title)
@@ -110,7 +110,7 @@ function urlinfo(url)
         local _, _, link = string.find(url, "link=(%d+)")
         data["link"] = link
     end
-    local _, data_str = kiko.table2json(data)
+    local _, data_str = kiko.table2json(data, 'compact')
     return epinfo({
         ["data"] = data_str
     })
@@ -207,7 +207,7 @@ function danmu(source)
     local _, _, cid = string.find(content, "cid=(.-)&")
     if cid == nil then error("cid解析失败") end
     source_obj["cid"] = cid
-    local _, data_str = kiko.table2json(source_obj)
+    local _, data_str = kiko.table2json(source_obj, 'compact')
     source["data"] = data_str
 
     return source, downloadDanmu(cid)

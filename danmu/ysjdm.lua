@@ -38,7 +38,7 @@ function search(keyword)
         parser:readnext()
         if parser:curnode()=="a" then
             local data = { ["collection"] = string.format("https://%s/", settings["latest_addr"]) .. parser:curproperty("href") }
-            local _, data_str = kiko.table2json(data)
+            local _, data_str = kiko.table2json(data, 'compact')
             table.insert(results, {
                 ["title"] = parser:curproperty("title"),
                 ["data"] = data_str
@@ -68,7 +68,7 @@ function epinfo(source)
         while parser:curnode()=="li" and parser:start() do
             parser:readnext()
             local data = { ["ep"] = string.format("https://%s/", settings["latest_addr"]) .. parser:curproperty("href") }
-            local _, data_str = kiko.table2json(data)
+            local _, data_str = kiko.table2json(data, 'compact')
             table.insert(results, {
                 ["title"] = parser:readcontent(),
                 ["data"] = data_str
@@ -102,11 +102,11 @@ function urlinfo(url)
 
     if matched == "ep" then 
         local data = { ["ep"] = url }
-        local _, data_str = kiko.table2json(data)
+        local _, data_str = kiko.table2json(data, 'compact')
         return {{["data"] = data_str, ["title"] = "unknown"}}
     elseif matched == "collection" then
         local data = { ["collection"] = url }
-        local _, data_str = kiko.table2json(data)
+        local _, data_str = kiko.table2json(data, 'compact')
         return epinfo({["data"] = data_str})
     end
 end
@@ -175,7 +175,7 @@ function danmu(source)
     if dm_id == nil then error("视频信息解析失败: dm_id") end
 
     source_obj["dm_id"] = dm_id
-    local _, data_str = kiko.table2json(source_obj)
+    local _, data_str = kiko.table2json(source_obj, 'compact')
     source["data"] = data_str
     return source, downloadDanmu(source_obj["dm_id"])
 end

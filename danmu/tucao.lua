@@ -52,7 +52,7 @@ function search(keyword)
                 local data = {
                     ["hid"] = hid,
                 }
-                local _, data_str = kiko.table2json(data)
+                local _, data_str = kiko.table2json(data, 'compact')
                 table.insert(results, {
                     ["title"] = curTitle,
                     ["data"] = data_str
@@ -90,7 +90,7 @@ function epinfo(source)
                 ["hid"] = source_obj["hid"],
                 ["index"] = tostring(index)
             }
-            local _, data_str = kiko.table2json(data)
+            local _, data_str = kiko.table2json(data, 'compact')
             index = index + 1
             table.insert(results, {
                 ["title"] = title,
@@ -130,7 +130,7 @@ function urlinfo(url)
         ["hid"] = hid,
         ["index"] = index
     }
-    local _, data_str = kiko.table2json(data)
+    local _, data_str = kiko.table2json(data, 'compact')
     return epinfo({
         ["title"]="",
         ["data"] = data_str
