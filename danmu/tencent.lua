@@ -151,5 +151,6 @@ function danmu(source)
     source_obj["vid"] = vid
     local _, data_str = kiko.table2json(source_obj, 'compact')
     source["data"] = data_str
+    source["srcid"] = vid
     return source, downloadDanmu(vid)
 end

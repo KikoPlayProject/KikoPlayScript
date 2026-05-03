@@ -94,6 +94,7 @@ function epinfo(source)
             index = index + 1
             table.insert(results, {
                 ["title"] = title,
+                ["srcid"] = string.format("%s-%d", source_obj["hid"], index),
                 ["data"] = data_str
             })
         end
@@ -133,6 +134,7 @@ function urlinfo(url)
     local _, data_str = kiko.table2json(data, 'compact')
     return epinfo({
         ["title"]="",
+        ["srcid"] = string.format("%s-%s", hid, index),
         ["data"] = data_str
     })
 end

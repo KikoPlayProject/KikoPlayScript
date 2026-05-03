@@ -862,6 +862,7 @@ browser对象方法：
     ["valid"]=bool,                 --弹幕源是否有效，2.1新增，可选，默认有效
     ["url"]=string,                 --源地址（eg. 视频地址）
     ["tags"]=Array[DanmuSourceTag]  --弹幕源标签，2.1新增，可选
+    ["srcid"]=string,               --弹幕源唯一id，2.1新增，长度<64，尽量包含
     --当DanmuSource从KikoPlay传递到脚本时，还会提供如下信息
     ["scriptId"]=string,            --脚本ID
 

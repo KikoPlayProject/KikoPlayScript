@@ -55,6 +55,7 @@ function search(keyword)
                     local source = {
                         ["title"] = video["itemshortTitle"],
                         ["duration"] = video["timeLength"],
+                        ["srcid"] = source_obj["vid"],
                         ["data"] = data_str,
                     }
                     table.insert(items, source)
@@ -214,5 +215,6 @@ function danmu(source)
     source_obj["pieces"] = math.ceil(source["duration"] / 300 + 1)
     local _, data_str = kiko.table2json(source_obj, 'compact')
     source["data"] = data_str
+    source["srcid"] = source_obj["vid"]
     return source, downloadDanmu(source_obj["vid"], source_obj["pieces"])
 end

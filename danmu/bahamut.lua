@@ -177,6 +177,7 @@ function epinfo(source)
                     local _, data_str = kiko.table2json(data, 'compact')
                     table.insert(results, {
                         ["title"] = parser:readcontent(),
+                        ["srcid"] = sn,
                         ["data"] = data_str
                     })
                 end
@@ -192,7 +193,8 @@ function epinfo(source)
             local _, data_str = kiko.table2json(data, 'compact')
             table.insert(results, {
                 ["title"] = title,
-                ["data"] = data_str
+                ["data"] = data_str,
+                ["srcid"] = sn
             })
         end
     end

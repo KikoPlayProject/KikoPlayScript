@@ -193,6 +193,7 @@ function urlinfo(url)
     table.insert(results, {
         ["title"] = title,
         ["duration"] = duration,
+        ["srcid"] = vid,
         ["data"] = data_str
     })
     return results

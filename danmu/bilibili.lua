@@ -137,6 +137,7 @@ function epinfo(source)
                 ["title"] = fTitle,
                 ["duration"] = bobj["duration"]/1000,
                 ["url"] = bobj["link"],
+                ["srcid"] = string.format("%d", bobj["cid"]),
                 ["data"] = data_str
             })
         end
@@ -168,6 +169,7 @@ function epinfo(source)
                 ["title"] = fTitle,
                 ["duration"] = bobj["duration"]/1000,
                 ["url"] = bobj["link"],
+                ["srcid"] = string.format("%d", bobj["cid"]),
                 ["data"] = data_str
             })
         end
@@ -206,7 +208,8 @@ function epinfo(source)
                 ["duration"] = bobj["duration"] or 0,
                 ["url"] = url,
                 ["tags"] = source["tags"] or {},
-                ["data"] = data_str
+                ["data"] = data_str,
+                ["srcid"] = string.format("%d", bobj["cid"])
             })
         end
         return results
