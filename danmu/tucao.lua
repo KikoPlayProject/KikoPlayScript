@@ -95,7 +95,8 @@ function epinfo(source)
             table.insert(results, {
                 ["title"] = title,
                 ["srcid"] = string.format("%s-%d", source_obj["hid"], index),
-                ["data"] = data_str
+                ["data"] = data_str,
+                ["url"] = string.format("https://%s/play/h%s#%d", settings["latest_addr"], source_obj["hid"], index)
             })
         end
     end

@@ -58,7 +58,8 @@ function urlinfo(url)
 
     table.insert(results, {
         ["title"] = title,
-        ["data"] = data_str
+        ["data"] = data_str,
+        ["url"] = url
     })
     return results
 end

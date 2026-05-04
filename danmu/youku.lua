@@ -194,6 +194,7 @@ function urlinfo(url)
         ["title"] = title,
         ["duration"] = duration,
         ["srcid"] = vid,
+        ["url"] = url,
         ["data"] = data_str
     })
     return results

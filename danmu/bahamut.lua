@@ -178,6 +178,7 @@ function epinfo(source)
                     table.insert(results, {
                         ["title"] = parser:readcontent(),
                         ["srcid"] = sn,
+                        ["url"] = string.format("https://ani.gamer.com.tw/animeVideo.php?sn=%s", sn),
                         ["data"] = data_str
                     })
                 end
@@ -194,7 +195,8 @@ function epinfo(source)
             table.insert(results, {
                 ["title"] = title,
                 ["data"] = data_str,
-                ["srcid"] = sn
+                ["srcid"] = sn,
+                ["url"] = string.format("https://ani.gamer.com.tw/animeVideo.php?sn=%s", sn)
             })
         end
     end

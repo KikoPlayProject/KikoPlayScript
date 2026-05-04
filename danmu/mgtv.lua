@@ -128,7 +128,8 @@ function urlinfo(url)
         ["title"] = title,
         ["duration"] = duration,
         ["srcid"] = vid,
-        ["data"] = data_str
+        ["data"] = data_str,
+        ["url"] = url
     })
     return results
 end

@@ -182,7 +182,7 @@ function epinfo(source)
             url = string.format("https://www.bilibili.com/video/av%s", source_obj["aid"])
         else
             query["bvid"] = source_obj["bvid"]
-            url = string.format("https://www.bilibili.com/video/BV%s", source_obj["bvid"])
+            url = string.format("https://www.bilibili.com/video/%s", source_obj["bvid"])
         end
         local header = { ["Accept"]="application/json" }
         local err, reply = kiko.httpget("http://api.bilibili.com/x/web-interface/view", query, header)

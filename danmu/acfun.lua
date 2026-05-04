@@ -56,6 +56,7 @@ function search(keyword)
             local _, data_str = kiko.table2json(data, 'compact')
             table.insert(eps, {
                 ["title"] = bgmTitle .. " " .. tostring(i),
+                ["url"] = data["url"],
                 ["data"] = data_str
             })
             i = i+1
@@ -101,6 +102,7 @@ function urlinfo(url)
     local _, data_str = kiko.table2json(data, 'compact')
     table.insert(results, {
         ["title"] = "unknown",
+        ["url"] = url,
         ["data"] = data_str
     })
     return results

@@ -60,7 +60,8 @@ function epinfo(source)
                     title = string.trim(title)
                     table.insert(results, {
                         ["title"] = title,
-                        ["data"] = data_str
+                        ["data"] = data_str,
+                        ["url"] = string.format("https://www.5dm.link/bangumi/dv%s?line=1&link=%s", dv, link)
                     })
                 end
             end
