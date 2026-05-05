@@ -193,6 +193,13 @@ function epinfo(source)
         local obj = obj["data"]
         local aid = string.format("%d", obj["aid"])
         local results = {}
+        local tags = source["tags"] or {}
+        if #tags == 0 then
+            tags = {{
+                ["text"] = "UP:" .. obj["owner"]["name"],
+                ["link"] = string.format("https://space.bilibili.com/%d", obj["owner"]["mid"])
+            },}
+        end
         for i, bobj in ipairs(obj["pages"]) do
             local data = {
                 ["cid"] = string.format("%d", bobj["cid"]),
@@ -207,7 +214,7 @@ function epinfo(source)
                 ["title"] = bobj["part"],
                 ["duration"] = bobj["duration"] or 0,
                 ["url"] = url,
-                ["tags"] = source["tags"] or {},
+                ["tags"] = tags,
                 ["data"] = data_str,
                 ["srcid"] = string.format("%d", bobj["cid"])
             })
