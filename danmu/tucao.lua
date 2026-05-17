@@ -195,5 +195,17 @@ function danmu(source)
         end
         xmlreader:readnext()
     end
+    local update_src = false
+    if source["srcid"] == nil or source["srcid"] == "" then
+        source["srcid"] = string.format("%s-%s", source_obj["hid"], source_obj["index"])
+        update_src = true
+    end
+    if source["url"] == nil or source["url"] == "" then
+        source["url"] = string.format("https://%s/play/h%s#%s", settings["latest_addr"], source_obj["hid"], source_obj["index"])
+        update_src = true
+    end
+    if update_src then
+        return source, danmus
+    end
     return nil, danmus
 end

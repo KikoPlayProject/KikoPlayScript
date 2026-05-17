@@ -285,5 +285,17 @@ function danmu(source)
             ["sender"]=sender
         })
     end
+    local update_src = false
+    if source["srcid"] == nil or source["srcid"] == "" then
+        source["srcid"] = source_obj["sn"]
+        update_src = true
+    end
+    if source["url"] == nil or source["url"] == "" then
+        source["url"] = string.format("https://ani.gamer.com.tw/animeVideo.php?sn=%s", source_obj["sn"])
+        update_src = true
+    end
+    if update_src then
+        return source, danmus
+    end
     return nil, danmus
 end

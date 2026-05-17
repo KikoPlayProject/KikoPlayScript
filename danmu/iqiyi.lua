@@ -186,7 +186,20 @@ function danmu(source)
     if err ~= nil then error(err) end
 
     if source_obj["vid"] ~= nil then
-        return nil, downloadDanmu(source_obj["vid"], source_obj["pieces"])
+        local update_src = false
+        if source["srcid"] == nil or source["srcid"] == "" then
+            source["srcid"] = source_obj["vid"]
+            update_src = true
+        end
+        if source["url"] == nil or source["url"] == "" then
+            source["url"] = source_obj["url"]
+            update_src = true
+        end
+        if update_src then
+            return source, downloadDanmu(source_obj["vid"], source_obj["pieces"])
+        else
+            return nil, downloadDanmu(source_obj["vid"], source_obj["pieces"])
+        end
     end
 
 

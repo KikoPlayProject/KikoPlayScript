@@ -7,14 +7,22 @@ info = {
     ["label_color"] = "0xEB5D56",
 }
 
+settings = {
+    ["latest_addr"] = {
+        ["title"] = "5dm最新地址",
+        ["desc"] = "地址不要添加'https://'前缀",
+        ["default"] = "www.5dm.dev",
+    }
+}
+
 supportedURLsRe = {
-    "(https?://)?www\\.5dm\\.link/(bangumi|end|ova)/dv(\\d+)(\\?(link=[0-9]+)?)?",
-    "(https?://)?www\\.5dm\\.link/(bangumi|end|ova)/dv(\\d+)(\\?line=\\d+)&(link=[0-9]+)?"
+    "(https?://)?www\\.5dm\\.dev/(bangumi|end|ova)/dv(\\d+)(\\?(link=[0-9]+)?)?",
+    "(https?://)?www\\.5dm\\.dev/(bangumi|end|ova)/dv(\\d+)(\\?line=\\d+)&(link=[0-9]+)?"
 }
 
 sampleSupporedURLs = {
-    "https://www.5dm.link/bangumi/dv56062?link=6",
-    "https://www.5dm.link/end/dv17582?line=1&link=2"
+    "https://www.5dm.dev/bangumi/dv56062?link=6",
+    "https://www.5dm.dev/end/dv17582?line=1&link=2"
 }
 
 function unescape(str)
@@ -33,7 +41,7 @@ function epinfo(source)
     local err, source_obj = kiko.json2table(source["data"])
     if err ~= nil then error(err) end
 
-    local baseUrl = "https://www.5dm.link/bangumi/dv" .. source_obj["dv"]
+    local baseUrl =  string.format("https://%s/bangumi/dv%d", settings["latest_addr"], source_obj["dv"])
     local headers =  {
         ["User-Agent"] = kiko.browser.ua(),
     }
@@ -61,7 +69,7 @@ function epinfo(source)
                     table.insert(results, {
                         ["title"] = title,
                         ["data"] = data_str,
-                        ["url"] = string.format("https://www.5dm.link/bangumi/dv%s?line=1&link=%s", dv, link)
+                        ["url"] = string.format("https://%s/bangumi/dv%s?line=1&link=%s", settings["latest_addr"], dv, link)
                     })
                 end
             end
@@ -72,25 +80,26 @@ function epinfo(source)
 end
 
 function urlinfo(url)
+    local base_url = string.gsub(settings["latest_addr"], "%.", "%%.")
     local pattens = {
-        ["https?://www%.5dm%.link/bangumi/dv(%d+)%?link=(%d+)"]="dv_link",
-        ["www%.5dm%.link/bangumi/dv(%d+)%?link=(%d+)"]="dv_link",
-        ["https?://www%.5dm%.link/bangumi/dv(%d+)%?line=%d+&link=(%d+)"]="dv_link",
-        ["www%.5dm%.link/bangumi/dv(%d+)%?line=%d+&link=(%d+)"]="dv_link",
-        ["https?://www%.5dm%.link/bangumi/dv(%d+)"]="dv",
-        ["www%.5dm%.link/bangumi/dv(%d+)"]="dv",
-        ["https?://www%.5dm%.link/end/dv(%d+)%?link=(%d+)"]="dv_link",
-        ["www%.5dm%.link/end/dv(%d+)%?link=(%d+)"]="dv_link",
-        ["https?://www%.5dm%.link/end/dv(%d+)%?line=%d+&link=(%d+)"]="dv_link",
-        ["www%.5dm%.link/end/dv(%d+)%?line=%d+&link=(%d+)"]="dv_link",
-        ["https?://www%.5dm%.link/end/dv(%d+)"]="dv",
-        ["www%.5dm%.link/end/dv(%d+)"]="dv",
-        ["https?://www%.5dm%.link/ova/dv(%d+)%?link=(%d+)"]="dv_link",
-        ["www%.5dm%.link/ova/dv(%d+)%?link=(%d+)"]="dv_link",
-        ["https?://www%.5dm%.link/ova/dv(%d+)%?line=%d+&link=(%d+)"]="dv_link",
-        ["www%.5dm%.link/ova/dv(%d+)%?line=%d+&link=(%d+)"]="dv_link",
-        ["https?://www%.5dm%.link/ova/dv(%d+)"]="dv",
-        ["www%.5dm%.link/ova/dv(%d+)"]="dv",
+        ["https?://" .. base_url .. "/bangumi/dv(%d+)%?link=(%d+)"]="dv_link",
+        [base_url .. "/bangumi/dv(%d+)%?link=(%d+)"]="dv_link",
+        ["https?://" .. base_url .. "/bangumi/dv(%d+)%?line=%d+&link=(%d+)"]="dv_link",
+        [base_url .. "/bangumi/dv(%d+)%?line=%d+&link=(%d+)"]="dv_link",
+        ["https?://" .. base_url .. "/bangumi/dv(%d+)"]="dv",
+        [base_url .. "/bangumi/dv(%d+)"]="dv",
+        ["https?://" .. base_url .. "/end/dv(%d+)%?link=(%d+)"]="dv_link",
+        [base_url .. "/end/dv(%d+)%?link=(%d+)"]="dv_link",
+        ["https?://" .. base_url .. "/end/dv(%d+)%?line=%d+&link=(%d+)"]="dv_link",
+        [base_url .. "/end/dv(%d+)%?line=%d+&link=(%d+)"]="dv_link",
+        ["https?://" .. base_url .. "/end/dv(%d+)"]="dv",
+        [base_url .. "/end/dv(%d+)"]="dv",
+        ["https?://" .. base_url .. "/ova/dv(%d+)%?link=(%d+)"]="dv_link",
+        [base_url .. "/ova/dv(%d+)%?link=(%d+)"]="dv_link",
+        ["https?://" .. base_url .. "/ova/dv(%d+)%?line=%d+&link=(%d+)"]="dv_link",
+        [base_url .. "/ova/dv(%d+)%?line=%d+&link=(%d+)"]="dv_link",
+        ["https?://" .. base_url .. "/ova/dv(%d+)"]="dv",
+        [base_url .. "/ova/dv(%d+)"]="dv",
     }
     local matched = nil
     for pv, k in pairs(pattens) do
@@ -118,7 +127,7 @@ function urlinfo(url)
 end
 
 function downloadDanmu(cid)
-    local danmuUrl = "https://www.5dm.link/player/nxml.php"
+    local danmuUrl = string.format("https://%s/player/nxml.php", settings["latest_addr"])
     local query = {
         ["id"] = cid
     }
@@ -162,7 +171,7 @@ function downloadDanmu(cid)
             end
         end
 
-        local sender = tostring(dmObj[4])
+        local sender = "[5dm]" .. tostring(dmObj[4])
 
         local text = unescape(dmObj[5])
         if text == "文明追番，请勿剧透！" then
@@ -188,10 +197,14 @@ function danmu(source)
     if err ~= nil then error(err) end
     
     if source_obj["cid"] ~= nil then
+        if source["srcid"] == nil or source["srcid"] == "" then
+            source["srcid"] = source_obj["cid"]
+            return source, downloadDanmu(source_obj["cid"])
+        end
         return nil, downloadDanmu(source_obj["cid"])
     end
 
-    local url = "https://www.5dm.link/bangumi/dv" .. source_obj["dv"]
+    local url = string.format("https://%s/bangumi/dv%s", settings["latest_addr"], source_obj["dv"])
     local query = {}
     if source_obj["link"] ~= nil then
         query['line'] = "1"

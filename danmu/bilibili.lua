@@ -342,18 +342,36 @@ function danmu(source)
         end
         xmlreader:readnext()
     end
+
+    local update_src = false
+    if source["srcid"] == nil or source["srcid"] == "" then
+        source["srcid"] = cid
+        update_src = true
+    end
+    if source["url"] == nil or source["url"] == "" then
+        if source_obj["aid"] ~= nil then
+            source["url"] = string.format("https://www.bilibili.com/video/av%s", source_obj["aid"])
+            update_src = true
+        else
+            source["url"] = string.format("https://www.bilibili.com/video/%s", source_obj["bvid"])
+            update_src = true
+        end
+    end
     if dm_state ~= 0 then
         if source["valid"] == nil or source["valid"] == true then
             kiko.log(string.format("cid: %s 可能已失效，state: %d", cid, dm_state))
             source["valid"] = false
-            return source, danmus
+            update_src = true
         end
     else
         if source["valid"] ~= nil and source["valid"] == false then
             kiko.log(string.format("cid: %s 已恢复，state: %d", cid, dm_state))
             source["valid"] = true
-            return source, danmus
+            update_src = true
         end
+    end
+    if update_src then
+        return source, danmus
     end
     return nil, danmus
 end
