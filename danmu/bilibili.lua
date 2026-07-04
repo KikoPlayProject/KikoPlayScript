@@ -289,6 +289,35 @@ function urlinfo(url)
     end
 end
 
+function fill_src_tag(source, aid, bvid)
+    local tags = source["tags"] or {}
+    if #tags > 0 then
+        return false
+    end
+    local query = {}
+    if aid ~= nil then
+        query["aid"] = aid
+    else
+        query["bvid"] = bvid
+    end
+    local header = { ["Accept"]="application/json" }
+    local err, reply = kiko.httpget("http://api.bilibili.com/x/web-interface/view", query, header)
+    if err ~= nil then
+        return false
+    end
+    local content = reply["content"]
+    local err, obj = kiko.json2table(content)
+    if err ~= nil then
+        return false
+    end
+    local obj = obj["data"]
+    source["tags"] = {{
+        ["text"] = "UP:" .. obj["owner"]["name"],
+        ["link"] = string.format("https://space.bilibili.com/%d", obj["owner"]["mid"])
+    }}
+    return true
+end
+
 function danmu(source)
     local err, source_obj = kiko.json2table(source["data"])
     if err ~= nil then error(err) end
@@ -351,9 +380,11 @@ function danmu(source)
     if source["url"] == nil or source["url"] == "" then
         if source_obj["aid"] ~= nil then
             source["url"] = string.format("https://www.bilibili.com/video/av%s", source_obj["aid"])
+            fill_src_tag(source, source_obj["aid"], nil)
             update_src = true
         else
             source["url"] = string.format("https://www.bilibili.com/video/%s", source_obj["bvid"])
+            fill_src_tag(source, nil, source_obj["bvid"])
             update_src = true
         end
     end

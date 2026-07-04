@@ -10,7 +10,7 @@ info = {
 settings = {
     ["cover_quality"]={
         ["title"]="封面图质量",
-        ["default"]="common",
+        ["default"]="large",
         ["desc"]="图片质量从高到低：medium(中), common(正常), large(高)",
         ["choices"]="medium,common,large"
     },
@@ -25,7 +25,12 @@ settings = {
         ["default"]="y",
         ["desc"]="搜索标签时是否显示演员层次标签",
         ["choices"]="y,n"
-    }
+    },
+    ["addr"] = {
+        ["title"] = "bgm地址",
+        ["desc"] = "地址不要添加'https://xxx.'前缀",
+        ["default"] = "bgm.tv",
+    },
 }
 
 searchsettings = {
@@ -76,7 +81,7 @@ function search(keyword, options)
     local header = {
         ["Accept"]="application/json"
     }
-    local err, reply = kiko.httpget(string.format("https://api.bgm.tv/search/subject/%s", keyword), query, header)
+    local err, reply = kiko.httpget(string.format("https://api.%s/search/subject/%s", settings["addr"], keyword), query, header)
     if err ~= nil then  error(err) end
     local content = reply["content"]
     local err, obj = kiko.json2table(content)
@@ -116,7 +121,7 @@ function getep(anime)
     local header = {
         ["Accept"]="application/json"
     }
-    local err, reply = kiko.httpget(string.format("https://api.bgm.tv/subject/%s/ep", bgmId), {}, header)
+    local err, reply = kiko.httpget(string.format("https://api.%s/subject/%s/ep", settings["addr"], bgmId), {}, header)
     if err ~= nil then error(err) end
     local content = reply["content"]
     local err, obj = kiko.json2table(content)
@@ -162,7 +167,7 @@ function getCrt(bgmId)
     local header = {
         ["Accept"]="application/json"
     }
-    local err, reply = kiko.httpget(string.format("https://api.bgm.tv/subject/%s", bgmId), query, header)
+    local err, reply = kiko.httpget(string.format("https://api.%s/subject/%s", settings["addr"], bgmId), query, header)
     if err ~= nil then 
         kiko.log(err)
         return {}
@@ -189,7 +194,7 @@ function getCrt(bgmId)
             table.insert(crts, {
                 ["name"]=crt_name,
                 ["actor"]=actor,
-                ["link"]=string.format("http://bgm.tv/character/%d", crt["id"]),
+                ["link"]=string.format("http://%s/character/%d", settings["addr"], crt["id"]),
                 ["imgurl"]=imgurl
             })
         end
@@ -205,7 +210,7 @@ function detail(anime)
     local header = {
         ["Accept"]="application/json"
     }
-    local err, reply = kiko.httpget(string.format("https://api.bgm.tv/v0/subjects/%s", bgmId), query, header)
+    local err, reply = kiko.httpget(string.format("https://api.%s/v0/subjects/%s", settings["addr"], bgmId), query, header)
     if err ~= nil then error(err) end
     local content = reply["content"]
     local err, obj = kiko.json2table(content)
@@ -218,7 +223,7 @@ function detail(anime)
     local anime = {
         ["name"]=animeName,
         ["data"]=bgmId,
-        ["url"]=string.format("http://bgm.tv/subject/%s", bgmId),
+        ["url"]=string.format("http://%s/subject/%s", settings["addr"], bgmId),
         ["desc"]=obj["summary"],
         ["airdate"]=obj["date"],
         ["epcount"]=obj["eps"],
@@ -429,7 +434,7 @@ end
 
 function gettags(anime)
     local bgmId = anime["data"]
-    local err, reply = kiko.httpget(string.format("http://bgm.tv/subject/%s", bgmId))
+    local err, reply = kiko.httpget(string.format("http://%s/subject/%s", settings["addr"], bgmId))
     if err ~= nil then error(err) end
     local content = reply["content"]
     local _, _, tagContent = string.find(content, "<div class=\"subject_tag_section\">(.*)<div id=\"panelInterestWrapper\">")
