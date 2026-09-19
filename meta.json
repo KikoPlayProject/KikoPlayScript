@@ -81,13 +81,13 @@
         "version": "0.2.2"
     },
     {
-        "desc": "5dm弹幕脚本，www.5dm.link",
+        "desc": "5dm弹幕脚本，www.5dm.dev",
         "id": "Kikyou.d.5dm",
         "min_kiko": "2.0.0",
         "name": "5dm",
         "type": "danmu",
         "url": "https://raw.githubusercontent.com/KikoPlayProject/KikoPlayScript/master/danmu/5dm.lua",
-        "version": "0.4"
+        "version": "0.5"
     },
     {
         "desc": "异世界动漫弹幕脚本，www.dmmiku.com",
