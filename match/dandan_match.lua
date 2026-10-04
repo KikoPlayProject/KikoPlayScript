@@ -2,7 +2,7 @@ info = {
     ["name"] = "弹弹Match",
     ["id"] = "Kikyou.m.DDMatch",
 	["desc"] = "弹弹Play动画关联脚本，利用弹弹Play API根据文件信息获取匹配的动画信息",
-	["version"] = "0.1",
+	["version"] = "0.2",
     ["min_kiko"] = "2.0.0",
 }
 
@@ -93,22 +93,9 @@ function getBgmId(animeId)
         return bgmIdCache[animeId]
     end
 
-    local err, reply = nil, nil
     local path = "/api/v2/bangumi/" .. animeId
-    if kiko.envinfo()["kservice"] then
-        
-        local header = {
-            ["Accept"] = "application/json"
-        }
-        local options = {
-            ["set_dandan_header"] = true,
-            ["dandan_path"] = path,
-        }
-        err, reply = kiko.httpget("https://api.dandanplay.net" .. path, {}, header, options)
-    else
-        local header = get_header(path)
-        err, reply = kiko.httpget("https://api.dandanplay.net" .. path, {}, header)
-    end
+    local header = get_header(path)
+    local err, reply = kiko.httpget("https://api.dandanplay.net" .. path, {}, header)
 
     if err ~= nil then 
         kiko.log(err)
@@ -141,22 +128,9 @@ function match(path)
     }
     local err, post_data = kiko.table2json(post)
     
-    local err, reply = nil, nil
-    if kiko.envinfo()["kservice"] then
-        local header = {
-            ["Content-Type"] = "application/json",
-            ["Accept"] = "application/json"
-        }
-        local options = {
-            ["set_dandan_header"] = true,
-            ["dandan_path"] = "/api/v2/match",
-        }
-        err, reply = kiko.httppost("https://api.dandanplay.net/api/v2/match", post_data, header, {}, options)
-    else
-        local header = get_header("/api/v2/match")
-        header["Content-Type"] = "application/json"
-        err, reply = kiko.httppost("https://api.dandanplay.net/api/v2/match", post_data, header)
-    end
+    local header = get_header("/api/v2/match")
+    header["Content-Type"] = "application/json"
+    local err, reply = kiko.httppost("https://api.dandanplay.net/api/v2/match", post_data, header)
     
     if err ~= nil then error(err) end
     local content = reply["content"]

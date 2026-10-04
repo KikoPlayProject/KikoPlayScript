@@ -33,7 +33,7 @@
         "name": "Dandan",
         "type": "danmu",
         "url": "https://raw.githubusercontent.com/KikoPlayProject/KikoPlayScript/master/danmu/dandan.lua",
-        "version": "0.5"
+        "version": "0.7"
     },
     {
         "desc": "爱奇艺弹幕脚本",
@@ -114,7 +114,7 @@
         "name": "弹弹Match",
         "type": "match",
         "url": "https://raw.githubusercontent.com/KikoPlayProject/KikoPlayScript/master/library/dandan_match.lua",
-        "version": "0.1"
+        "version": "0.2"
     },
     {
         "desc": "TMDb+ 文件识别脚本",
@@ -132,7 +132,7 @@
         "name": "豆瓣电影",
         "type": "library",
         "url": "https://raw.githubusercontent.com/KikoPlayProject/KikoPlayScript/master/library/douban.lua",
-        "version": "0.2"
+        "version": "0.3.1"
     },
     {
         "desc": "TMDb+ 资料刮削脚本  -  Edited by: kafovin \n从 The Movie Database (TMDb) 刮削影剧元数据，也可设置选择刮削fanart的媒体图片、Jellyfin/Emby的本地元数据、TVmaze的剧集演员。",

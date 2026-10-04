@@ -920,7 +920,8 @@ browser对象方法：
     ["name"]=string,   --人物名称
     ["actor"]=string,  --演员名称
     ["link"]=string,   --人物资料页URL
-    ["imgurl"]=string  --人物图片URL
+    ["imgurl"]=string, --人物图片URL
+    ["image"]=string   --可选，图片原始二进制数据；提供时不再自动下载imgurl
 }
 ```
 ### Anime
@@ -933,6 +934,7 @@ browser对象方法：
     ["airdate"]=string,       --放送日期，格式为yyyy-mm-dd
     ["epcount"]=number,       --分集数
     ["coverurl"]=string,      --封面图URL
+    ["cover"]=string,         --可选，封面原始二进制数据；提供时不再自动下载coverurl
     ["staff"]=string,         --staff
     ["crt"]=Array[Character], --人物
     ["scriptId"]=string       --脚本ID

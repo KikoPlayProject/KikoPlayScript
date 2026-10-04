@@ -21,7 +21,7 @@ info = {
     ["name"] = "豆瓣电影",
     ["id"] = "Kikyou.l.Douban",
     ["desc"] = "豆瓣电影脚本，从 movie.douban.com 中获取视频信息",
-    ["version"] = "0.2",
+    ["version"] = "0.3.1",
     ["min_kiko"] = "2.0.0"
 }
 
@@ -108,23 +108,164 @@ local function html_entity_decode(str)
         ["&euro;"] = "€",   -- 欧元
     }
     
-    -- 首先替换命名实体
-    local result = str
-    for entity, char in pairs(entities) do
-        result = string.gsub(result, entity, char)
+    -- 单次解码，数字实体使用 Unicode，避免中文实体超出 string.char 的范围。
+    return (string.gsub(str, "&(#?[%w]+);", function(entity)
+        local named = entities["&" .. entity .. ";"]
+        if named then return named end
+        local hex = string.match(entity, "^#[xX](%x+)$")
+        local decimal = string.match(entity, "^#(%d+)$")
+        local code = hex and tonumber(hex, 16) or tonumber(decimal)
+        if code and code > 0 and code <= 0x10ffff and not (code >= 0xd800 and code <= 0xdfff) then
+            return utf8.char(code)
+        end
+        return "&" .. entity .. ";"
+    end))
+end
+
+local function plain_text(str)
+    return string.trim(html_entity_decode(string.gsub(str or "", "<.->", " ")))
+end
+
+-- 页面可能包含多个 JSON-LD 块，只接受当前豆瓣条目的数据。
+local function read_detail_data(content, subject_id)
+    local reason = "豆瓣页面中未找到详情数据"
+    if type(content) ~= "string" then return nil, reason end
+    local candidate, media_candidate
+    for attributes, json in string.gmatch(content, "<script%s+([^>]-)>(.-)</script%s*>") do
+        if string.find(" " .. attributes, [=[%stype%s*=%s*["']application/ld%+json["']]=]) then
+            local err, data = kiko.json2table(json)
+            if err ~= nil or type(data) ~= "table" then
+                reason = "豆瓣详情 JSON 解析失败：" .. tostring(err or "数据格式不正确")
+            elseif type(data.url) == "string" then
+                if string.match(data.url, "/subject/(%d+)") == subject_id then
+                    if data["@type"] == "Movie" or data["@type"] == "TVSeries" then
+                        if type(data.name) == "string" and string.trim(data.name) ~= ""
+                            and type(data.datePublished) == "string"
+                            and string.match(data.datePublished, "^%d%d%d%d%-%d%d%-%d%d") then
+                            return data
+                        end
+                        media_candidate = media_candidate or data
+                    end
+                    candidate = candidate or data
+                else
+                    reason = "豆瓣返回的条目与所选条目不一致，请重新搜索后再试"
+                end
+            end
+        end
     end
-    
-    -- 处理十进制实体，如&#39;
-    result = string.gsub(result, "&#(%d+);", function(num)
-        return string.char(tonumber(num))
-    end)
-    
-    -- 处理十六进制实体，如&#x27;
-    result = string.gsub(result, "&#x(%x+);", function(hex)
-        return string.char(tonumber(hex, 16))
-    end)
-    
-    return result
+    -- 保留不完整的影视数据，让 detail 给出缺标题/日期的具体提示。
+    if media_candidate or candidate then return media_candidate or candidate end
+    return nil, reason
+end
+
+local function is_verification_page(content)
+    -- sec 是当前自动验证表单；captcha-solution 是需要人工输入的验证码。
+    return string.find(content, [=[<form[^>]*%sname%s*=%s*["']sec["']]=]) ~= nil
+        or string.find(content, [=[<form[^>]*%sid%s*=%s*["']sec["']]=]) ~= nil
+        or string.find(content, "captcha%-solution") ~= nil
+end
+
+local function fetch_detail(url, subject_id)
+    local headers = {}
+    if kiko.browser and kiko.browser.ua then
+        headers["User-Agent"] = kiko.browser.ua()
+    end
+    local err, reply = kiko.httpget(url, {}, headers)
+    if err == nil and type(reply) == "table" then
+        local data = read_detail_data(reply.content, subject_id)
+        if data then return reply.content, data end
+    end
+
+    kiko.log("豆瓣详情：普通请求未取得条目数据，尝试内置浏览器")
+    if not kiko.browser or not kiko.browser.create or not kiko.sleep then
+        error("豆瓣详情需要内置浏览器验证，请使用 KikoPlay 2.0.0 或以上版本")
+    end
+    local browser = kiko.browser.create()
+    local loaded = browser:load(url, {}, 15000)
+    local content = browser:html() or ""
+    local data, reason = read_detail_data(content, subject_id)
+    if data then return content, data end
+    if not loaded then
+        error("豆瓣详情页加载失败或超时，请检查网络后重试")
+    end
+
+    -- load 只等待页面加载，验证页的异步计算和跳转可能尚未完成。
+    for _ = 1, 50 do
+        kiko.sleep(200)
+        content = browser:html() or ""
+        data, reason = read_detail_data(content, subject_id)
+        if data then return content, data end
+    end
+
+    if is_verification_page(content) then
+        kiko.log("豆瓣详情：需要完成网页验证")
+        browser:show("请完成豆瓣验证，看到所选条目的详情后关闭窗口；关闭未完成的页面将取消本次获取。")
+        content = browser:html() or ""
+        data, reason = read_detail_data(content, subject_id)
+        if data then return content, data end
+        error("豆瓣验证未完成或已取消，请重试。" .. reason)
+    end
+    error(reason .. "，请稍后重试或检查豆瓣页面是否发生变化")
+end
+
+local function is_image_content(content)
+    if type(content) ~= "string" or #content < 12 then return false end
+    return string.sub(content, 1, 3) == "\255\216\255"
+        or string.sub(content, 1, 8) == "\137PNG\r\n\26\n"
+        or (string.sub(content, 1, 4) == "RIFF" and string.sub(content, 9, 12) == "WEBP")
+        or string.sub(content, 1, 6) == "GIF87a"
+        or string.sub(content, 1, 6) == "GIF89a"
+end
+
+local function image_download_url(url)
+    -- 豆瓣这些图片同时提供 JPEG 版本，兼容未安装 WebP 解码插件的 Qt。
+    -- 只调整本次下载地址，保留 coverurl/imgurl 中的原始来源 URL。
+    local path, suffix = string.match(url, "^([^?#]+)(.*)$")
+    if path and string.match(path, "^https?://img%d+%.doubanio%.com/view/") then
+        return (string.gsub(path, "%.webp$", ".jpg")) .. suffix
+    end
+    return url
+end
+
+local function load_images(anime)
+    -- 宿主按 URL 下载时不带 Referer，豆瓣 CDN 会返回 418。
+    -- 直接提供二进制 cover/image，宿主会保存图片并跳过无请求头的下载。
+    local urls, querys, headers, targets = {}, {}, {}, {}
+    local image_headers = { ["Referer"] = anime.url }
+    if kiko.browser and kiko.browser.ua then
+        image_headers["User-Agent"] = kiko.browser.ua()
+    end
+    local function add(target, url_key, image_key, label)
+        local url = target[url_key]
+        if type(url) ~= "string" or url == "" then return end
+        table.insert(urls, image_download_url(url))
+        table.insert(querys, {})
+        table.insert(headers, image_headers)
+        table.insert(targets, { object = target, key = image_key, label = label })
+    end
+    add(anime, "coverurl", "cover", "封面")
+    for _, character in ipairs(anime.crt) do
+        add(character, "imgurl", "image", "人物：" .. character.name)
+    end
+    if #urls == 0 then return end
+
+    local err, replies = kiko.httpgetbatch(urls, querys, headers)
+    if err ~= nil or type(replies) ~= "table" then
+        kiko.log("豆瓣图片下载失败：" .. tostring(err or "未收到响应"))
+        return
+    end
+    for i, target in ipairs(targets) do
+        local reply = replies[i]
+        local status = type(reply) == "table" and tonumber(reply.statusCode)
+        if status and status >= 200 and status < 300 and not reply.hasError and is_image_content(reply.content) then
+            target.object[target.key] = reply.content
+        else
+            -- CDN 的错误文本也可能标记为 image/webp，不能只检查 Content-Type。
+            local reason = type(reply) == "table" and reply.errInfo
+            if not reason or reason == "" then reason = status and ("HTTP " .. status .. "，响应不是有效图片") or "未收到图片响应" end
+            kiko.log("豆瓣图片下载失败（" .. target.label .. "）：" .. reason)
+        end
+    end
 end
 
 
@@ -229,12 +370,15 @@ end
 -- 在调用这个函数时，anime的信息可能不全，但至少会包含name，data这两个字段。
 function getep(anime)
     kiko.log("function getep")
-
-    if anime.url == "" then
-        anime = detail(anime)
+    local err, data = kiko.json2table(anime.data or "")
+    if err == nil and type(data) == "table" then
+        local count = tonumber(data.epcount)
+        if count and count >= 0 and count % 1 == 0 then
+            return getEpInfo(count)
+        end
     end
-
-    return anime.eps
+    -- 兼容旧版保存的数据，以及宿主只传入 name/data 的情况。
+    return detail(anime).eps
 end
 
 -- 获取动画详细信息
@@ -242,167 +386,116 @@ end
 -- 返回：Anime
 function detail(anime)
     kiko.log("function detail")
-    local err, anime_data = kiko.json2table(anime["data"])
-    if err ~= nil or anime_data.url == nil or anime_data.url == "" then
-        return nil
+    local err, anime_data = kiko.json2table(anime.data or "")
+    if err ~= nil or type(anime_data) ~= "table" then
+        error("豆瓣条目数据无效，请重新搜索后再添加")
     end
-
-    local url = ''
-    if anime_data.url ~= nil then
-        url = anime_data.url
+    local subject_id = tostring(anime_data.subject_id or "")
+    if not string.match(subject_id, "^%d+$") then
+        subject_id = type(anime_data.url) == "string" and string.match(anime_data.url, "/subject/(%d+)")
     end
-    if anime_data.subject_id ~= nil then
-        url = "https://movie.douban.com/subject/" .. anime_data.subject_id .. "/"
+    if not subject_id then
+        error("豆瓣条目地址无效，请重新搜索后再添加")
     end
+    local url = "https://movie.douban.com/subject/" .. subject_id .. "/"
+    local content, data = fetch_detail(url, subject_id)
+    local name = type(data.name) == "string" and string.trim(html_entity_decode(data.name)) or ""
+    if name == "" then
+        error("豆瓣详情数据缺少标题，请稍后重试")
+    end
+    local airdate = type(data.datePublished) == "string" and string.match(data.datePublished, "^(%d%d%d%d%-%d%d%-%d%d)")
+    if not airdate then
+        error("豆瓣条目缺少有效的首播/上映日期，暂时无法添加到资料库")
+    end
+    if type(anime.name) == "string" and anime.name ~= "" and string.startswith(name, anime.name) then
+        name = anime.name -- data.name 可能包含原名和翻译名
+    end
+    local anime_detail = {
+        ["name"] = name,
+        ["url"] = url,
+        ["desc"] = html_entity_decode(data.description),
+        ["airdate"] = airdate,
+        ["coverurl"] = data.image,
+    }
 
-    local err, reply = kiko.httpget(url)
-
-    if err ~= nil then error(err) end
-    local content = reply["content"]
-
-    local _, _, dataJsonStr = string.find(content, "<script type=\"application/ld%+json\">(.-)</script>")
-    if dataJsonStr ~= nil then
-        local err1, data = kiko.json2table(dataJsonStr)
-
-        if err1 ~= nil then
-            kiko.log("[ERROR] JSON 转换失败" .. dataJsonStr .. ".json2table: " .. err1)
-            error(err1)
-        end
-
-        local name = data.name
-        if string.startswith(name, anime.name) then
-            name = anime.name  -- data.name 可能包含原名和翻译名
-        end
-        local anime_detail = {
-            ["name"] = name,
-            ["url"] = "https://movie.douban.com" .. data.url,
-            ["desc"] = data.description,
-            ["airdate"] = data.datePublished,
-            ["coverurl"] = data.image,
-        }
-
-        local staffs = {}
-        if data.director ~= nil and #data.director > 0 then
-            local directors = {}
-            for _, director in ipairs(data.director) do
-                table.insert(directors, html_entity_decode(director.name))
+    local staffs = {}
+    local function add_people(role, people)
+        if type(people) ~= "table" then return end
+        if people.name then people = {people} end
+        local names = {}
+        for _, person in ipairs(people) do
+            if type(person) == "table" and type(person.name) == "string" then
+                table.insert(names, html_entity_decode(person.name))
             end
-            table.insert(staffs, "导演:" .. table.concat(directors, ", "))
         end
-        if data.author ~= nil and #data.author > 0 then
-            local authors = {}
-            for _, author in ipairs(data.author) do
-                table.insert(authors, html_entity_decode(author.name))
-            end
-            table.insert(staffs, "编剧:" .. table.concat(authors, ", "))
+        if #names > 0 then table.insert(staffs, role .. ":" .. table.concat(names, ", ")) end
+    end
+    add_people("导演", data.director)
+    add_people("编剧", data.author)
+    add_people("主演", data.actor)
+
+    -- 同时兼容原始 HTML 和浏览器序列化后的 <br> / <br/> / <br />。
+    local fields = {}
+    local staffListStr = string.match(content, [=[<div%s+[^>]-id%s*=%s*["']info["'][^>]*>(.-)</div>]=])
+    if staffListStr then
+        for role, names in string.gmatch(staffListStr, [=[<span%s+[^>]-class%s*=%s*["']pl["'][^>]*>([^<]-):%s*</span>%s*(.-)<br%s*/?>]=]) do
+            role, names = plain_text(role), plain_text(names)
+            fields[role] = names
+            table.insert(staffs, role .. ":" .. names)
         end
-        if data.actor ~= nil and #data.actor > 0 then
-            local actors = {}
-            for _, actor in ipairs(data.actor) do
-                table.insert(actors, html_entity_decode(actor.name))
-            end
-            table.insert(staffs, "主演:" .. table.concat(actors, ", "))
-        end
-        -- staff info
-        local _, _, staffListStr = string.find(content, '<div id="info">(.-)</div>')
-        if staffListStr ~= nil then
-            local lpos = 1
-            local npos = #staffListStr
-            while lpos < npos do
-                local _, epos, role, names = string.find(staffListStr, '<span class="pl">(.-):</span>(.-)<br/?>', lpos)
-                if role ~= nil and names ~= nil then
-                    role = string.trim(role)
-                    names = string.gsub(names, "<.->", " ")
-                    names = string.trim(names)
-                    table.insert(staffs, role .. ":" .. html_entity_decode(names))
-                    lpos = epos + 1
-                else
-                    break
+    end
+    if #staffs > 0 then anime_detail.staff = table.concat(staffs, ";") end
+
+    -- 演职员区块是可选的，缺失时不能对 nil 调用 string.split。
+    local celebrities = string.match(content, [=[<ul%s+[^>]-class%s*=%s*["'][^"']*celebrities%-list[^"']*["'][^>]*>(.-)</ul>]=])
+    local crt = {}
+    if celebrities then
+        for celebrity in string.gmatch(celebrities, [=[<li%s+[^>]-class%s*=%s*["']celebrity["'][^>]*>(.-)</li>]=]) do
+            local person_name = string.match(celebrity, [=[<span%s+[^>]-class%s*=%s*["']name["'][^>]*>(.-)</span>]=])
+            if person_name then
+                local c = { ["name"] = plain_text(person_name) }
+                c.link = string.match(person_name, [=[href%s*=%s*["'](.-)["']]=])
+                local role = string.match(celebrity, [=[<span%s+[^>]-class%s*=%s*["']role["'][^>]*>(.-)</span>]=])
+                if role then c.actor = plain_text(role) end
+                local image = string.match(celebrity, "background%-image:%s*url%((.-)%)")
+                if image then
+                    image = html_entity_decode(image)
+                    c.imgurl = string.gsub(string.trim(image), [=[^["'](.-)["']$]=], "%1")
                 end
+                table.insert(crt, c)
             end
         end
-        if #staffs > 0 then
-            anime_detail["staff"] = table.concat(staffs, ";")
-        end
-
-        -- 角色
-        local _, _, celebritieListStr = string.find(content,
-            "<ul class=\"celebrities%-list from%-subject __oneline\">(.-)</ul>")
-
-        local celebritieStrList = string.split(celebritieListStr, '<li class="celebrity">')
-
-        if (celebritieStrList ~= nil) then
-            local crt = {}
-            for i = 2, #celebritieStrList do -- 第一条是无意义换行"\n\n            \n  \n\n  ",从第二条开始遍历
-                local celebritie = celebritieStrList[i]
-                if celebritie ~= "" then
-                    local _, _, actor = string.find(celebritie, '<span class="role" .->(.-)</span>')
-                    local c = {}
-                    if actor ~= nil then
-                        c["actor"] = actor
-                    end
-
-                    local _, _, link, name = string.find(celebritie,
-                        '<span class="name"><a href="(.-)" .->(.-)</a></span>')
-
-                    if link ~= nil then
-                        c["link"] = link
-                    end
-
-                    if name ~= nil then
-                        c["name"] = name
-                    end
-
-
-                    local _, _, imgurl = string.find(celebritie,
-                        '<div class="avatar" style="background%-image: url%((.-)%)">')
-                    if imgurl ~= nil then
-                        c["imgurl"] = imgurl
-                    end
-
-                    table.insert(crt, c)
-                end
-            end
-
-            anime_detail["crt"] = crt
-        end
-
-        -- 集数
-        local _, _, epCount = string.find(content, '<span class="pl">集数:</span> (%d-)<br/>')
-        if epCount ~= nil then
-            local count = tonumber(epCount)
-            anime_detail["epcount"] = tonumber(count)
-
-            if count > 0 then
-                anime_detail["eps"] = getEpInfo(count)
-            end
-        else
-            anime_detail["epcount"] = 1
-            anime_detail["eps"] = getEpInfo(1)
-        end
-
-        -- 标签
-        local _, _, tagsStr = string.find(content, '<span class="pl">类型:</span> (.-)<br/>')
-        if tagsStr ~= nil then
-            local parser = kiko.htmlparser(tagsStr)
-            local tags = {}
-            while not parser:atend() do
-                if parser:curnode() == "span" and parser:start() and parser:curproperty("property") == "v:genre" then
-                    table.insert(tags, parser:readcontent())
-                end
-                parser:readnext()
-            end
-
-            anime_data["tags"] = tags
-        end
-
-        local err, media_data_json = kiko.table2json(anime_data)
-        anime_detail["data"] = media_data_json
-
-        return anime_detail
     end
+    anime_detail.crt = crt
 
-    return anime
+    local count = fields["集数"] and tonumber(string.match(fields["集数"], "^%d+"))
+    -- 电影视为一集，尚未公布集数的电视剧保留未知状态，避免误存为一集。
+    if not count then count = data["@type"] == "TVSeries" and 0 or 1 end
+    anime_detail.epcount = count
+    anime_detail.eps = getEpInfo(count)
+
+    local tags = {}
+    local genres = data.genre
+    if type(genres) == "string" then genres = {genres} end
+    if type(genres) == "table" then
+        for _, genre in ipairs(genres) do
+            if type(genre) == "string" then table.insert(tags, html_entity_decode(genre)) end
+        end
+    end
+    if #tags == 0 then
+        for genre in string.gmatch(content, [=[<span%s+[^>]-property%s*=%s*["']v:genre["'][^>]*>(.-)</span>]=]) do
+            table.insert(tags, plain_text(genre))
+        end
+    end
+    anime_data.tags = tags
+    anime_data.epcount = count
+    anime_data.subject_id = subject_id
+    anime_data.url = url
+    local json_err, media_data_json = kiko.table2json(anime_data)
+    if json_err ~= nil then error("豆瓣详情数据保存失败：" .. json_err) end
+    anime_detail.data = media_data_json
+    load_images(anime_detail)
+    return anime_detail
 end
 
 -- KikoPlay支持多级Tag，用"/"分隔，你可以返回类似“动画制作/A1-Pictures”这样的标签
@@ -411,7 +504,7 @@ end
 function gettags(anime)
     kiko.log("function gettags")
     local err, anime_data = kiko.json2table(anime["data"])
-    if err ~= nil or anime_data.tags == nil or anime_data.tags == "" then
+    if err ~= nil or type(anime_data) ~= "table" or type(anime_data.tags) ~= "table" then
         return {}
     end
 

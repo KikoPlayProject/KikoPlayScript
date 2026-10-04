@@ -2,8 +2,8 @@ info = {
     ["name"] = "Dandan",
     ["id"] = "Kikyou.d.Dandan",
 	["desc"] = "弹弹Play弹幕脚本",
-	["version"] = "0.5",
-    ["min_kiko"] = "2.0.0",
+	["version"] = "0.7",
+    ["min_kiko"] = "2.2.0",
     ["label_color"] = "0x25AAE1",
 }
 
@@ -55,29 +55,22 @@ function get_header(path)
 end
 
 function search(keyword)
-    local query = {
-        ["anime"]=keyword
-    }
-
-    local err, reply = nil, nil
-    if kiko.envinfo()["kservice"] then
-        local header = {
-            ["Accept"] = "application/json"
-        }
-        local options = {
-            ["set_dandan_header"] = true,
-            ["dandan_path"] = "/api/v2/search/episodes",
-        }
-        err, reply = kiko.httpget("https://api.dandanplay.net/api/v2/search/episodes", query, header, options)
+    local err, obj = nil, nil
+    if kiko.envinfo()["kservice"] and type(kiko.dsearch) == "function" then
+        err, obj = kiko.dsearch(keyword)
+        if err ~= nil then error(err) end
     else
+        local query = { ["anime"] = keyword }
         local header = get_header("/api/v2/search/episodes")
+        local reply
         err, reply = kiko.httpget("https://api.dandanplay.net/api/v2/search/episodes", query, header)
+        if err ~= nil then error(err) end
+        err, obj = kiko.json2table(reply["content"])
+        if err ~= nil then error(err) end
+        if obj["success"] ~= true then
+            error(obj["errorMessage"] or "弹弹搜索失败")
+        end
     end
-
-    if err ~= nil then error(err) end
-    local content = reply["content"]
-    local err, obj = kiko.json2table(content)
-    if err ~= nil then error(err) end
     local animes = obj["animes"]
     if animes == nil then return {} end
     local results = {}
@@ -111,31 +104,26 @@ function epinfo(source)
 end
 
 function danmu(source)
-    local query = {}
-    local danmuUrl = "https://api.dandanplay.net/api/v2/comment/" .. source["data"]
-    if settings["withRelated"] == 'y' then
-        query["withRelated"] = "true"
-    end
-
-    local err, reply = nil, nil
-    if kiko.envinfo()["kservice"] then
-        local header = {
-            ["Accept"] = "application/json"
-        }
-        local options = {
-            ["set_dandan_header"] = true,
-            ["dandan_path"] = "/api/v2/comment/" .. source["data"],
-        }
-        err, reply = kiko.httpget(danmuUrl, query, header, options)
+    local err, obj = nil, nil
+    if kiko.envinfo()["kservice"] and type(kiko.dcomment) == "function" then
+        err, obj = kiko.dcomment(tonumber(source["data"]), settings["withRelated"] == 'y')
+        if err ~= nil then error(err) end
+        if type(obj) ~= "table" or type(obj["comments"]) ~= "table" then
+            error("请更新 KikoPlay 以使用弹弹弹幕服务")
+        end
     else
-        local header = get_header("/api/v2/comment/" .. source["data"])
-        err, reply = kiko.httpget(danmuUrl, query, header)
+        local query = {}
+        if settings["withRelated"] == 'y' then
+            query["withRelated"] = "true"
+        end
+        local path = "/api/v2/comment/" .. source["data"]
+        local reply
+        err, reply = kiko.httpget("https://api.dandanplay.net" .. path, query, get_header(path))
+        if err ~= nil then error(err) end
+        err, obj = kiko.json2table(reply["content"])
+        if err ~= nil then error(err) end
     end
-    
-    if err ~= nil then error(err) end
-    local danmuContent = reply["content"]
 
-    local err, obj = kiko.json2table(danmuContent)
     local danmuArray = obj["comments"]
     if danmuArray == nil then return nil, {} end
 
